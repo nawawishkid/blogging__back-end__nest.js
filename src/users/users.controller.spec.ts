@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -45,6 +46,14 @@ describe('UsersController API Contract', () => {
 
       expect(await usersController.findOne('1')).toBe(user);
     });
+
+    it('should throw NotFoundException if user with given id could not be found', () => {
+      jest.spyOn(usersService, 'findOne').mockResolvedValue(undefined);
+
+      return expect(usersController.findOne('1')).rejects.toThrow(
+        new NotFoundException(),
+      );
+    });
   });
 
   describe('create()', () => {
@@ -70,6 +79,14 @@ describe('UsersController API Contract', () => {
       jest.spyOn(usersService, 'remove').mockResolvedValue(1);
 
       expect(await usersController.remove('1')).toBeUndefined();
+    });
+
+    it('should throw NotFoundException if user with given id could not be found', () => {
+      jest.spyOn(usersService, 'remove').mockResolvedValue(null);
+
+      return expect(usersController.remove('1')).rejects.toThrow(
+        new NotFoundException(),
+      );
     });
   });
 });

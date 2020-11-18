@@ -36,5 +36,14 @@ describe('User interceptor', () => {
 
     it(`should return object with 'createdUser' property when the handler of the context is 'create'`, () =>
       testReturnedObject('create', 'createdUser', { id: 1 }));
+
+    it(`should return object with 'data' property when the handler of the context is unknown`, () =>
+      testReturnedObject('someWeirdUnexistedMethodName', 'data', { id: 1 }));
+
+    it(`should return undefined if the handler name is 'remove'`, () => {
+      handlerName = 'remove';
+
+      return expect(intercept()).resolves.toBeUndefined();
+    });
   });
 });
