@@ -1,39 +1,50 @@
+import debugPkg from 'debug';
 import { Injectable } from '@nestjs/common';
-import { Session, Store } from 'express-session';
-import { Session as SessionEntity } from './entities/session.entity';
+import { SessionData, Store } from 'express-session';
 import { SessionsService } from './sessions.service';
+import { ExpressSessionDataDto } from './dto/update-session.dto';
 
-interface ISessionStore {
-  destroy(sid: string, callback: (error: Error | null) => void);
-  get(
-    sid: string,
-    callback: (error: Error | null, session: SessionEntity) => void,
-  );
-  set(sid: string, session: Session, callback: (error: Error | null) => void);
-  touch(sid: string, session: Session, callback: (error: Error | null) => void);
-}
+const debug = debugPkg('blogging:module:sessions:store');
 
 @Injectable()
-export class SessionsStore extends Store implements ISessionStore {
+export class SessionsStore extends Store {
   constructor(private sessionsService: SessionsService) {
     super();
   }
 
-  destroy(sid, callback) {
+  destroy(sid: string, callback: (err?: any) => void) {
+    debug('destroy session id: ', sid);
     return this.sessionsService
       .remove(sid)
       .then(() => callback(null))
       .catch(callback);
   }
 
-  get(sid, callback) {
+  get(
+    sid: string,
+    callback: (err?: any, session?: SessionData | null) => void,
+  ) {
+    debug('get session id: ', sid);
+
     return this.sessionsService
       .findOne(sid)
+      .then(v => JSON.parse(v.data))
+      .then(v => {
+        debug('session: ', JSON.stringify(v, null, 2));
+        return v;
+      })
       .then(v => callback(null, v))
       .catch(callback);
   }
 
-  set(sid, session, callback) {
+  set(
+    sid: string,
+    session: ExpressSessionDataDto,
+    callback: (err?: any) => void,
+  ) {
+    debug('set session id: ', sid);
+    debug('session: ', JSON.stringify(session, null, 2));
+
     return this.sessionsService
       .update(sid, {
         userId: session.user ? session.user.id : undefined,
@@ -43,7 +54,12 @@ export class SessionsStore extends Store implements ISessionStore {
       .catch(callback);
   }
 
-  touch(sid, session, callback) {
+  touch(
+    sid: string,
+    session: ExpressSessionDataDto,
+    callback: (err?: any) => void,
+  ) {
+    debug('touch session id: ', sid);
     return this.set(sid, session, callback);
   }
 }

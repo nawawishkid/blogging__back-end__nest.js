@@ -1,11 +1,9 @@
 import { IsBoolean, IsNumber, IsObject, IsOptional } from 'class-validator';
+import { SessionData } from 'express-session';
 
-type ExpressSessionDataDto = {
-  cookie: {
-    _expires: number;
-    [key: string]: any;
-  };
-};
+export interface ExpressSessionDataDto extends SessionData {
+  [key: string]: any;
+}
 
 export class UpdateSessionDto {
   @IsObject()

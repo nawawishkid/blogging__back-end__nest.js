@@ -11,6 +11,7 @@ import {
   HttpCode,
   UnauthorizedException,
   InternalServerErrorException,
+  UseGuards,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
@@ -20,6 +21,7 @@ import { User } from '../users/user.decorator';
 import { User as UserEntity } from '../users/entities/user.entity';
 import { EmailNotFoundException } from './exceptions/email-not-found.exception';
 import { IncorrectPasswordException } from './exceptions/incorrect-password.exception';
+import { AuthGuard } from '../auth.guard';
 
 @Controller('sessions')
 export class SessionsController {
@@ -31,7 +33,11 @@ export class SessionsController {
     @Session() session,
   ): Promise<SessionEntity> {
     try {
-      return this.sessionsService.create(session.id, createSessionDto, session);
+      return await this.sessionsService.create(
+        session.id,
+        createSessionDto,
+        session,
+      );
     } catch (e) {
       if (
         e instanceof EmailNotFoundException ||
@@ -43,6 +49,7 @@ export class SessionsController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   async findAll(@User() user: UserEntity): Promise<SessionEntity[]> {
     const foundSessions: SessionEntity[] = await this.sessionsService.findAll(
