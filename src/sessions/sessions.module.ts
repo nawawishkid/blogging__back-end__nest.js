@@ -7,7 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Session } from './entities/session.entity';
 import { SessionsMiddleware } from './sessions.middleware';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
 const getSessionOptionsProvider = (
   options: SessionOptions = {} as SessionOptions,
