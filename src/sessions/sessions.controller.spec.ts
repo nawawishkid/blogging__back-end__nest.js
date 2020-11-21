@@ -1,8 +1,19 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { SessionData } from 'express-session';
 import { User } from '../users/entities/user.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
-import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  ExpressSessionDataDto,
+  UpdateSessionDto,
+} from './dto/update-session.dto';
+import { Session } from './entities/session.entity';
+import { EmailNotFoundException } from './exceptions/email-not-found.exception';
+import { IncorrectPasswordException } from './exceptions/incorrect-password.exception';
 import { SessionsController } from './sessions.controller';
 import { SessionsService } from './sessions.service';
 
@@ -39,10 +50,11 @@ describe('SessionsController', () => {
   describe('findAll()', () => {
     it('should return all sessions of the current user', async () => {
       const user: User = { id: 1 } as User;
+      const sessions = [{}] as Session[];
 
-      await controller.findAll(user);
+      jest.spyOn(sessionsService, 'findAll').mockResolvedValue(sessions);
 
-      expect(sessionsService.findAll).toHaveBeenCalled();
+      return expect(controller.findAll(user)).resolves.toStrictEqual(sessions);
     });
 
     it('should throw NotFoundException', async () => {
@@ -51,15 +63,16 @@ describe('SessionsController', () => {
       await expect(controller.findAll({ id: 1 } as User)).rejects.toThrow(
         NotFoundException,
       );
-      expect(sessionsService.findAll).toHaveBeenCalled();
     });
   });
 
   describe('findOne()', () => {
     it('should return session info', async () => {
-      await controller.findOne('20');
+      const session = {} as Session;
 
-      expect(sessionsService.findOne).toHaveBeenCalled();
+      jest.spyOn(sessionsService, 'findOne').mockResolvedValue(session);
+
+      return expect(controller.findOne('20')).resolves.toBe(session);
     });
 
     it('should throw NotFoundException', async () => {
@@ -73,42 +86,70 @@ describe('SessionsController', () => {
 
   describe('create()', () => {
     it('should return created session', async () => {
-      const session: CreateSessionDto = {
+      const createSessionDto: CreateSessionDto = {
         email: 'lorem@ipsum.dolor',
-      } as CreateSessionDto;
+        password: 'abc',
+      };
+      const expressSession = {};
+      const session = {} as Session;
 
-      jest.spyOn(sessionsService, 'create').mockResolvedValue(session as any);
+      jest.spyOn(sessionsService, 'create').mockResolvedValue(session);
 
-      await expect(controller.create(session, {})).resolves.toBe(session);
-      expect(sessionsService.create).toHaveBeenCalled();
+      await expect(
+        controller.create(createSessionDto, expressSession),
+      ).resolves.toBe(session);
+    });
+
+    it(`should throw Http exception`, async () => {
+      const createSessionDto: CreateSessionDto = {} as CreateSessionDto;
+      const expressSession: ExpressSessionDataDto = {} as ExpressSessionDataDto;
+      const spy = jest.spyOn(sessionsService, 'create');
+
+      spy.mockRejectedValueOnce(new EmailNotFoundException(''));
+
+      await expect(
+        controller.create(createSessionDto, expressSession),
+      ).rejects.toThrow(UnauthorizedException);
+
+      spy.mockRejectedValueOnce(new IncorrectPasswordException());
+
+      await expect(
+        controller.create(createSessionDto, expressSession),
+      ).rejects.toThrow(UnauthorizedException);
+
+      spy.mockRejectedValueOnce(new Error());
+
+      await expect(
+        controller.create(createSessionDto, expressSession),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
   describe('update()', () => {
     it('should return updated session', async () => {
-      const session: UpdateSessionDto = {
-        data: { cookie: { _expires: 1 } },
+      const updateSessionDto: UpdateSessionDto = {
+        data: { cookie: {} } as SessionData,
         userId: 1,
       };
+      const session = {} as Session;
 
-      jest.spyOn(sessionsService, 'update').mockResolvedValue(session as any);
+      jest.spyOn(sessionsService, 'update').mockResolvedValue(session);
 
-      await expect(controller.update('1', session)).resolves.toBe(session);
-      expect(sessionsService.update).toHaveBeenCalled();
+      await expect(controller.update('1', updateSessionDto)).resolves.toBe(
+        session,
+      );
     });
   });
 
   describe('remove()', () => {
     it('should return nothing', async () => {
       expect(await controller.remove('1')).toBeUndefined();
-      expect(sessionsService.remove).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException', async () => {
       jest.spyOn(sessionsService, 'remove').mockResolvedValue(null);
 
       await expect(controller.remove('1')).rejects.toThrow(NotFoundException);
-      expect(sessionsService.remove).toHaveBeenCalled();
     });
   });
 });

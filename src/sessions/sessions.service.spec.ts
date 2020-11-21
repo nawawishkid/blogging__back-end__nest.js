@@ -6,6 +6,8 @@ import { UpdateSessionDto } from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
 import { SessionsService } from './sessions.service';
 import { User } from 'src/users/entities/user.entity';
+import { CreateSessionDto } from './dto/create-session.dto';
+import { SessionData } from 'express-session';
 
 describe('SessionsService', () => {
   let service: SessionsService,
@@ -42,67 +44,100 @@ describe('SessionsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findAll()', () => {
+  describe('findAll(userId: number)', () => {
     it('should return all sessions of given user id', async () => {
-      const sessions: Session[] = [];
+      const sessionEntities: Session[] = [{ data: 'abc' } as Session];
 
-      jest.spyOn(sessionsRepository, 'find').mockResolvedValue(sessions);
+      jest.spyOn(sessionsRepository, 'find').mockResolvedValue(sessionEntities);
 
-      await expect(service.findAll(1)).resolves.toBe(sessions);
-      expect(sessionsRepository.find).toHaveBeenCalled();
+      await expect(service.findAll(1)).resolves.toBe(sessionEntities);
     });
   });
 
   describe('findOne()', () => {
     it('should return a session', async () => {
-      const session: Session = {} as Session;
+      const sessionEntity: Session = {
+        data: 'session',
+      } as Session;
 
-      jest.spyOn(sessionsRepository, 'findOne').mockResolvedValue(session);
+      jest
+        .spyOn(sessionsRepository, 'findOne')
+        .mockResolvedValue(sessionEntity);
 
-      await expect(service.findOne('1')).resolves.toBe(session);
-      expect(sessionsRepository.findOne).toHaveBeenCalled();
+      await expect(service.findOne('1')).resolves.toBe(sessionEntity);
     });
   });
 
   describe('create()', () => {
-    it('should return created session', async () => {
-      const createSessionDto = { email: '', password: '' };
-      const session = { cookie: { _expires: 10 } };
+    /**
+     * @TODO Test that it should serialize data field before saving to database
+     */
+    it('should return created session with serialized session data', async () => {
+      const user: User = { id: 1 } as User;
+      const createSessionDto: CreateSessionDto = { email: '', password: '' };
+      const expressSession = { cookie: { _expires: 10 } };
+      const sid: string = '1';
+      const createdSessionEntity: Session = {
+        data: JSON.stringify(expressSession),
+      } as Session;
 
-      jest.spyOn(sessionsRepository, 'save').mockResolvedValue(session as any);
       jest
-        .spyOn(authService, 'authenticate')
-        .mockResolvedValue({ id: 1 } as User);
+        .spyOn(sessionsRepository, 'save')
+        .mockResolvedValue(createdSessionEntity);
+      jest.spyOn(authService, 'authenticate').mockResolvedValue(user);
 
       await expect(
-        service.create('1', createSessionDto, session),
-      ).resolves.toBe(session);
-      expect(sessionsRepository.save).toHaveBeenCalled();
+        service.create(sid, createSessionDto, expressSession),
+      ).resolves.toBe(createdSessionEntity);
+    });
+
+    it(`should throw if given user credential is invalid`, async () => {
+      const createSessionDto: CreateSessionDto = { email: '', password: '' };
+      const expressSession = { cookie: { _expires: 10 } };
+      const sid: string = '1';
+      const createdSessionEntity: Session = {
+        data: JSON.stringify(expressSession),
+      } as Session;
+      const error = new Error('ok');
+
+      jest
+        .spyOn(sessionsRepository, 'save')
+        .mockResolvedValue(createdSessionEntity);
+      jest.spyOn(authService, 'authenticate').mockRejectedValue(error);
+
+      await expect(
+        service.create(sid, createSessionDto, expressSession),
+      ).rejects.toThrow(error);
     });
   });
 
   describe('update()', () => {
-    it('should return updated session', async () => {
-      const session: UpdateSessionDto = {
-        data: { cookie: { _expires: 10 } },
-        userId: 1,
+    it('should return updated session with serialized session data', async () => {
+      const expressSession: SessionData = { cookie: {} } as SessionData;
+      const updateSessionDto: UpdateSessionDto = {
+        data: expressSession,
       };
+      const updatedSessionEntity: Session = {
+        data: JSON.stringify(expressSession),
+      } as Session;
 
-      jest.spyOn(sessionsRepository, 'save').mockResolvedValue(session as any);
+      jest
+        .spyOn(sessionsRepository, 'save')
+        .mockResolvedValue(updatedSessionEntity);
 
-      await expect(service.update('id', session)).resolves.toBe(session);
-      expect(sessionsRepository.save).toHaveBeenCalled();
+      await expect(service.update('id', updateSessionDto)).resolves.toBe(
+        updatedSessionEntity,
+      );
     });
   });
 
   describe('remove()', () => {
-    it('should return deleted session id', async () => {
+    it('should return revoked session id', async () => {
       const id = 'id';
 
       jest.spyOn(sessionsRepository, 'save').mockResolvedValue({ id } as any);
 
       await expect(service.remove(id)).resolves.toBe(id);
-      expect(sessionsRepository.save).toHaveBeenCalled();
     });
   });
 });
