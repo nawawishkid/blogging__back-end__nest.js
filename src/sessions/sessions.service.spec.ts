@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
 import { Repository } from 'typeorm';
-import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  ExpressSessionDataDto,
+  UpdateSessionDto,
+} from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
 import { SessionsService } from './sessions.service';
 import { User } from 'src/users/entities/user.entity';
@@ -69,13 +72,30 @@ describe('SessionsService', () => {
   });
 
   describe('create()', () => {
+    it(`should set user ID on session object`, async () => {
+      const user = { id: 1000 } as User;
+      const sid = '10';
+      const expressSession = ({
+        cookie: { _expires: 10 },
+      } as unknown) as ExpressSessionDataDto;
+
+      jest.spyOn(sessionsRepository, 'save').mockResolvedValue(null);
+      jest.spyOn(authService, 'authenticate').mockResolvedValue(user);
+
+      await service.create(sid, { email: '', password: '' }, expressSession);
+
+      expect(expressSession.user).toStrictEqual({ id: user.id });
+    });
+
     /**
      * @TODO Test that it should serialize data field before saving to database
      */
     it('should return created session with serialized session data', async () => {
       const user: User = { id: 1 } as User;
       const createSessionDto: CreateSessionDto = { email: '', password: '' };
-      const expressSession = { cookie: { _expires: 10 } };
+      const expressSession = ({
+        cookie: { _expires: 10 },
+      } as unknown) as ExpressSessionDataDto;
       const sid: string = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),
@@ -93,7 +113,9 @@ describe('SessionsService', () => {
 
     it(`should throw if given user credential is invalid`, async () => {
       const createSessionDto: CreateSessionDto = { email: '', password: '' };
-      const expressSession = { cookie: { _expires: 10 } };
+      const expressSession = ({
+        cookie: { _expires: 10 },
+      } as unknown) as ExpressSessionDataDto;
       const sid: string = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),

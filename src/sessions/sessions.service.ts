@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
 import { Repository } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
-import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  ExpressSessionDataDto,
+  UpdateSessionDto,
+} from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
 
 @Injectable()
@@ -16,12 +19,14 @@ export class SessionsService {
   async create(
     sid: string,
     createSessionDto: CreateSessionDto,
-    session: any,
+    session: ExpressSessionDataDto,
   ): Promise<Session> {
     const { email, password } = createSessionDto;
 
     try {
       const user = await this.authService.authenticate(email, password);
+
+      session.user = { id: user.id };
 
       return this.update(sid, {
         userId: user.id,
