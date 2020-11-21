@@ -114,4 +114,12 @@ describe('AppController (e2e)', () => {
       });
     });
   });
+
+  describe('/sessions', () => {
+    describe('GET', () => {
+      it('should respond with all sessions of the current user', async () => {
+        return request(app.getHttpServer()).get('/sessions');
+      });
+    });
+  });
 });

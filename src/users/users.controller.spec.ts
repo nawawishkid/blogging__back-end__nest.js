@@ -14,6 +14,9 @@ describe('UsersController API Contract', () => {
       controllers: [UsersController],
       providers: [
         UsersService,
+        /**
+         * @TODO Should override UsersService instead of mocking its repository
+         */
         {
           provide: getRepositoryToken(User),
           useValue: {
@@ -37,7 +40,7 @@ describe('UsersController API Contract', () => {
       username: 'username',
       password: 'abc',
       createdAt: 'da',
-    };
+    } as User;
   });
 
   describe('findOne()', () => {

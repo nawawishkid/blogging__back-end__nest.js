@@ -1,10 +1,14 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SessionsModule } from './sessions/sessions.module';
 import configuration from './config/configuration';
+import { SessionsMiddleware } from './sessions/sessions.middleware';
+import { SessionsController } from './sessions/sessions.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -24,8 +28,18 @@ import configuration from './config/configuration';
       }),
     }),
     UsersModule,
+    SessionsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  constructor(private sessionsMiddleware: SessionsMiddleware) {}
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(this.sessionsMiddleware.use.bind(this.sessionsMiddleware))
+      .forRoutes(SessionsController);
+  }
+}
