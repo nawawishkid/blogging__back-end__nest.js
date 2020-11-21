@@ -9,6 +9,7 @@ export class Session {
   @ManyToOne(
     () => User,
     user => user.sessions,
+    { nullable: true },
   )
   user: User;
 
