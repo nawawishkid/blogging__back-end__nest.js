@@ -15,6 +15,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Blog } from 'src/blogs/entities/blog.entity';
 
 @Entity()
 @Unique(['email', 'username'])
@@ -60,4 +61,10 @@ export class User {
   )
   @Exclude()
   sessions: Session[];
+
+  @OneToMany(
+    () => Blog,
+    blog => blog.author,
+  )
+  blogs: Blog[];
 }
