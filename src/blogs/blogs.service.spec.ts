@@ -5,6 +5,7 @@ import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entities/blog.entity';
+import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 
 describe('BlogsService', () => {
   let service: BlogsService, blogsRepository: Repository<Blog>;
