@@ -1,0 +1,748 @@
+openapi: 3.0.1
+info:
+  title: Blogging
+  description:
+    'This is a sample server Petstore server.  You can find out more about     Swagger
+    at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).      For
+    this sample, you can use the api key `special-key` to test the authorization     filters.'
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: hi@nawawishkid.me
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+security:
+  - sessionId: []
+paths:
+  /blogs:
+    get:
+      tags:
+        - blog
+      summary: Get blogs
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blogs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Blog'
+
+    post:
+      tags:
+        - blog
+      summary: Create a blog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBlogDTO'
+      responses:
+        201:
+          description: Blog created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdBlog:
+                    $ref: '#/components/schemas/Blog'
+
+  /blogs:/{blogId}:
+    parameters:
+      - name: blogId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags:
+        - blog
+      summary: Get a blog
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blog:
+                    $ref: '#/components/schemas/Blog'
+        404:
+          description: Not Found
+
+    put:
+      tags:
+        - blog
+      summary: Update a blog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBlogDTO'
+      responses:
+        200:
+          description: Blog updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedBlog:
+                    $ref: '#/components/schemas/Blog'
+
+    delete:
+      tags:
+        - blog
+      summary: Delete a blog
+      responses:
+        204:
+          description: Blog deleted
+
+  /sessions:
+    post:
+      tags:
+        - session
+      summary: Create a session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionDTO'
+      responses:
+        201:
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdSession:
+                    $ref: '#/components/schemas/Session'
+
+    get:
+      tags:
+        - session
+      summary: Get sessions of the current user
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+
+  /sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - session
+      summary: Get a session
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Session'
+    put:
+      tags:
+        - session
+      summary: Update a session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionDTO'
+      responses:
+        200:
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedSession:
+                    $ref: '#/components/schemas/Session'
+    delete:
+      tags:
+        - session
+      summary: Delete a session
+      responses:
+        204:
+          description: Session deleted
+
+  /users:
+    post:
+      tags:
+        - user
+      summary: Create a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDTO'
+      responses:
+        201:
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdUser:
+                    $ref: '#/components/schemas/User'
+
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - user
+      summary: Get a user
+      responses:
+        200:
+          description: OK
+          content:
+            applicaiton/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - user
+      summary: Update a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDTO'
+      responses:
+        200:
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedUser:
+                    $ref: '#/components/schemas/User'
+
+  /users/{userId}/password:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    put:
+      tags:
+        - user
+      summary: Update a user's password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+              required:
+                - currentPassword
+                - newPassword
+      responses:
+        200:
+          description: User's password updated
+
+  /custom-fields:
+    post:
+      tags:
+        - Custom field
+      summary: Create a custom field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomFieldDTO'
+      responses:
+        201:
+          description: Custom field created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdCustomField:
+                    $ref: '#/components/schemas/CustomField'
+
+    get:
+      tags:
+        - Custom field
+      summary: Get custom fields
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customFields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomField'
+
+  /custom-fields/{customFieldId}:
+    parameters:
+      - name: customFieldId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags:
+        - Custom field
+      summary: Get a custom field
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customField:
+                    $ref: '#/components/schemas/CustomField'
+
+    put:
+      tags:
+        - Custom field
+      summary: Update a custom field
+      requestBody:
+        content:
+          applicaiton/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomFieldDTO'
+      responses:
+        200:
+          description: Custom field updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedCustomField:
+                    $ref: '#/components/schemas/CustomField'
+
+    delete:
+      tags:
+        - Custom field
+      summary: Delete a custom field
+      responses:
+        204:
+          description: Custom field deleted
+
+  /custom-fields/{customFieldId}/values:
+    parameters:
+      - name: customFieldId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags:
+        - Custom field value
+      summary: Get a custom field's values
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customFieldValues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomFieldValue'
+
+    post:
+      tags:
+        - Custom field value
+      summary: Create a custom field's value
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomFieldValueDTO'
+      responses:
+        201:
+          description: Custom field value created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdCustomFieldValue:
+                    $ref: '#/components/schemas/CustomFieldValue'
+
+  /custom-fields/{customFieldId}/values/{customFieldValueId}:
+    parameters:
+      - name: customFieldId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: customFieldValueId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags:
+        - Custom field value
+      summary: Get a custom field value
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customField:
+                    $ref: '#/components/schemas/CustomFieldValue'
+
+    put:
+      tags:
+        - Custom field value
+      summary: Update a custom field value
+      requestBody:
+        content:
+          applicaiton/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomFieldValueDTO'
+      responses:
+        200:
+          description: Custom field value updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedCustomField:
+                    $ref: '#/components/schemas/CustomFieldValue'
+
+    delete:
+      tags:
+        - Custom field value
+      summary: Delete a custom field value
+      responses:
+        204:
+          description: Custom field value deleted
+
+  /files:
+    post:
+      tags:
+        - File
+      summary: Create a file
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFileDTO'
+      responses:
+        201:
+          description: File created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdFile:
+                    $ref: '#/components/schemas/File'
+
+    get:
+      tags:
+        - File
+      summary: Get files
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+
+  /files/{fileId}:
+    parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      tags:
+        - File
+      summary: Get a file
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+
+    delete:
+      tags:
+        - File
+      summary: Delete a file
+      responses:
+        204:
+          description: File deleted
+
+components:
+  schemas:
+    CreateBlogDTO:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        coverImage:
+          type: string
+          format: url
+        excerpt:
+          type: string
+    UpdateBlogDTO:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        coverImage:
+          type: string
+          format: url
+        excerpt:
+          type: string
+    Blog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        coverImage:
+          type: string
+          format: url
+        excerpt:
+          type: string
+        author:
+          $ref: '#/components/schemas/User'
+        metadata:
+          type: string
+          description: SEO or Open Graph key value
+          example: '{"twitter:card": "summary","twitter:creator":"nawawishkid"}'
+        customFields:
+          type: object
+          properties:
+            customFieldName:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomFieldValue'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - body
+        - coverImage
+    CreateSessionDTO:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    UpdateSessionDTO:
+      type: object
+      properties:
+        data: {}
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          type: integer
+          description: User ID
+        data:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        isRevoked:
+          type: boolean
+          default: false
+    UpdateCustomFieldDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    CreateCustomFieldDTO:
+      allOf:
+        - $ref: '#/components/schemas/UpdateCustomFieldDTO'
+      required:
+        - name
+    CustomField:
+      allOf:
+        - $ref: '#/components/schemas/CreateCustomFieldDTO'
+      properties:
+        id:
+          type: integer
+    UpdateCustomFieldValueDTO:
+      type: object
+      properties:
+        value:
+          type: string
+        description:
+          type: string
+    CreateCustomFieldValueDTO:
+      allOf:
+        - $ref: '#/components/schemas/UpdateCustomFieldValueDTO'
+      properties:
+        customFieldId:
+          type: integer
+      required:
+        - customFieldId
+        - value
+    CustomFieldValue:
+      allOf:
+        - $ref: '#/components/schemas/CreateCustomFieldValueDTO'
+      properties:
+        id:
+          type: integer
+    UpdateFileDTO:
+      type: object
+      properties:
+        name:
+          type: string
+    CreateFileDTO:
+      allOf:
+        - $ref: '#/components/schemas/UpdateFileDTO'
+      required:
+        - name
+    File:
+      allOf:
+        - $ref: '#/components/schemas/UpdateFileDTO'
+      properties:
+        id:
+          type: integer
+        path:
+          type: string
+          format: url
+        type:
+          type: string
+        size:
+          type: integer
+    UpdateUserDTO:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
+    CreateUserDTO:
+      allOf:
+        - $ref: '#/components/schemas/UpdateUserDTO'
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+        - username
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UpdateUserDTO'
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        emailIsVerified:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    sessionId:
+      type: apiKey
+      name: sess_id
+      in: cookie
