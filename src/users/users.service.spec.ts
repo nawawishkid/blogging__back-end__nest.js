@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindConditions, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -35,6 +35,25 @@ describe('UsersService', () => {
 
       expect(await usersService.findOne(data)).toBe(data);
       expect(usersRepository.findOne).toHaveBeenCalled();
+    });
+  });
+  describe(`findByEmail()`, () => {
+    it(`should return a user`, async () => {
+      let receivedCondition;
+      const email = 'email@gmail.com';
+      const select = null;
+      const users = { 'a@abc.co': {}, [email]: {} };
+
+      jest
+        .spyOn(usersRepository, 'findOne')
+        .mockImplementation((condition: any) => {
+          receivedCondition = condition;
+
+          return Promise.resolve(users[condition.where.email] as User);
+        });
+
+      expect(await usersService.findByEmail(email)).toBe(users[email]);
+      expect(receivedCondition).toStrictEqual({ where: { email }, select });
     });
   });
   describe('create()', () => {
