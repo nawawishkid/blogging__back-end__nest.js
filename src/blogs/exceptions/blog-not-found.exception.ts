@@ -1,5 +1,5 @@
 export class BlogNotFoundException extends Error {
-  constructor(msg) {
+  constructor(msg?) {
     super(msg);
   }
 }
