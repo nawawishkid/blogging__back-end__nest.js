@@ -1,4 +1,5 @@
-import { Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { CustomFieldValue } from './custom-field-value.entity';
 
 export class CustomField {
   @PrimaryGeneratedColumn()
@@ -9,4 +10,10 @@ export class CustomField {
 
   @Column('text', { nullable: true })
   description?: string;
+
+  @OneToMany(
+    () => CustomFieldValue,
+    customFieldValue => customFieldValue.customField,
+  )
+  values: CustomFieldValue[];
 }

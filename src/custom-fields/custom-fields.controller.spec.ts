@@ -3,6 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CustomFieldValuesService } from './custom-field-values.service';
 import { CustomFieldsController } from './custom-fields.controller';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
@@ -30,6 +31,7 @@ describe('CustomFieldsController', () => {
             remove: jest.fn(),
           },
         },
+        { provide: CustomFieldValuesService, useValue: {} },
       ],
     }).compile();
 
