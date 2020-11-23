@@ -23,6 +23,7 @@ describe('FilesService', () => {
             findOne: jest.fn,
             save: jest.fn(),
             delete: jest.fn(),
+            update: jest.fn(),
           },
         },
       ],
@@ -70,11 +71,19 @@ describe('FilesService', () => {
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
     it(`should return the created file`, () => {
-      const createdFile: File = {} as File;
+      const createFileDto: CreateFileDto = {
+        name: 'hello',
+        file: { path: 'http://abc.com', size: 10032309, type: 'image/png' },
+      };
+      const createdFile: File = {
+        id: 1,
+        name: createFileDto.name,
+        ...createFileDto.file,
+      };
 
       jest.spyOn(filesRepository, 'save').mockResolvedValue(createdFile);
 
-      return expect(service.create({} as CreateFileDto)).resolves.toEqual(
+      return expect(service.create(createFileDto)).resolves.toEqual(
         createdFile,
       );
     });
@@ -87,7 +96,7 @@ describe('FilesService', () => {
       jest
         .spyOn(filesRepository, 'update')
         .mockResolvedValue({ affected: 1 } as any);
-      jest.spyOn(filesRepository, 'findOne').mockRejectedValue(updatedFile);
+      jest.spyOn(filesRepository, 'findOne').mockResolvedValue(updatedFile);
 
       return expect(service.update(1, {} as UpdateFileDto)).resolves.toEqual(
         updatedFile,
