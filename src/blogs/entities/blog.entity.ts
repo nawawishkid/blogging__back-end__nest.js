@@ -1,6 +1,7 @@
 import { User } from '../../users/entities/user.entity';
-import { Column, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 
+@Entity()
 export class Blog {
   @PrimaryColumn('uuid')
   id: string;
