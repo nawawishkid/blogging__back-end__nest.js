@@ -1,26 +1,51 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
+import { CustomField } from './entities/custom-field.entity';
+import { CustomFieldNotFoundException } from './exceptions/custom-field-not-found.exception';
 
 @Injectable()
 export class CustomFieldsService {
-  create(createCustomFieldDto: CreateCustomFieldDto) {
-    return 'This action adds a new customField';
+  constructor(
+    @InjectRepository(CustomField)
+    private customFieldsRepository: Repository<CustomField>,
+  ) {}
+
+  create(createCustomFieldDto: CreateCustomFieldDto): Promise<CustomField> {
+    return this.customFieldsRepository.save(createCustomFieldDto);
   }
 
-  findAll() {
-    return `This action returns all customFields`;
+  findAll(): Promise<CustomField[]> {
+    return this.customFieldsRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} customField`;
+  findOne(id: number): Promise<CustomField> {
+    return this.customFieldsRepository.findOne(id);
   }
 
-  update(id: number, updateCustomFieldDto: UpdateCustomFieldDto) {
-    return `This action updates a #${id} customField`;
+  async update(
+    id: number,
+    updateCustomFieldDto: UpdateCustomFieldDto,
+  ): Promise<CustomField> {
+    const updateResult: UpdateResult = await this.customFieldsRepository.update(
+      id,
+      updateCustomFieldDto,
+    );
+
+    if (updateResult.affected === 0) throw new CustomFieldNotFoundException();
+
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} customField`;
+  async remove(id: number): Promise<number> {
+    const deleteResult: DeleteResult = await this.customFieldsRepository.delete(
+      id,
+    );
+
+    if (deleteResult.affected === 0) throw new CustomFieldNotFoundException();
+
+    return id;
   }
 }
