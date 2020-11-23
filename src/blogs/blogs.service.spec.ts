@@ -18,7 +18,12 @@ describe('BlogsService', () => {
         BlogsService,
         {
           provide: getRepositoryToken(Blog),
-          useValue: { find: jest.fn(), save: jest.fn() },
+          useValue: {
+            find: jest.fn(),
+            save: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -34,6 +39,7 @@ describe('BlogsService', () => {
   describe(`findByAuthorId(userId: number)`, () => {
     it(`should return all blogs of the user with given id`, async () => {
       const authorId = 1;
+      const foundBlogs: Blog[] = [{ id: 'blog-1' }, { id: 'blog-2' }] as Blog[];
       let receivedAuthorId;
 
       jest
@@ -41,14 +47,11 @@ describe('BlogsService', () => {
         .mockImplementation((condition: any) => {
           receivedAuthorId = condition.where.author;
 
-          return Promise.resolve([
-            { id: 'blog-1' },
-            { id: 'blog-2' },
-          ] as Blog[]);
+          return Promise.resolve(foundBlogs);
         });
 
       await expect(service.findByAuthorId(authorId)).resolves.toBe(
-        blogsRepository.find({ where: { author: authorId } }),
+        await blogsRepository.find({ where: { author: authorId } }),
       );
       expect(receivedAuthorId).toEqual(authorId);
     });

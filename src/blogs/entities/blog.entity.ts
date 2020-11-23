@@ -1,4 +1,4 @@
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Column, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 
 export class Blog {

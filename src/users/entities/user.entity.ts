@@ -15,7 +15,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Blog } from 'src/blogs/entities/blog.entity';
+import { Blog } from '../../blogs/entities/blog.entity';
 
 @Entity()
 @Unique(['email', 'username'])
