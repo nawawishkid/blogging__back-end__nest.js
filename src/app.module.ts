@@ -11,9 +11,18 @@ import { BlogsModule } from './blogs/blogs.module';
 import { FilesModule } from './files/files.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 
+const envFilePath = ['.env'];
+
+if (process.env.NODE_ENV === 'test') {
+  envFilePath.unshift('.env.test');
+}
+
 @Module({
   imports: [
-    ConfigModule.forRoot({ load: [configuration] }),
+    ConfigModule.forRoot({
+      load: [configuration],
+      envFilePath,
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
