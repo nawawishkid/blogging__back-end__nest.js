@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
+import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 
@@ -39,7 +40,7 @@ describe('FilesController', () => {
     it(`should return all files`, () => {
       const foundFiles: File[] = [{}, {}] as File[];
 
-      jest.spyOn(filesService, 'findAll').mockResolvedValue(foundFiles);
+      jest.spyOn(filesService, 'findAll').mockResolvedValue(foundFiles as any);
 
       return expect(controller.findAll()).resolves.toEqual({
         files: foundFiles,
@@ -57,9 +58,9 @@ describe('FilesController', () => {
     it(`should return a file with the given id`, () => {
       const foundFile: File = {} as File;
 
-      jest.spyOn(filesService, 'findOne').mockResolvedValue(foundFile);
+      jest.spyOn(filesService, 'findOne').mockResolvedValue(foundFile as any);
 
-      return expect(controller.findOne(1)).resolves.toEqual({
+      return expect(controller.findOne('1')).resolves.toEqual({
         file: foundFile,
       });
     });
@@ -67,7 +68,7 @@ describe('FilesController', () => {
     it(`should throw the NotFoundException if a file with the given file id could not be found`, () => {
       jest.spyOn(filesService, 'findOne').mockResolvedValue(undefined);
 
-      return expect(controller.findOne(1)).rejects.toThrow(NotFoundException);
+      return expect(controller.findOne('1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -75,7 +76,7 @@ describe('FilesController', () => {
     it(`should return the created file`, () => {
       const createdFile: File = {} as File;
 
-      jest.spyOn(filesService, 'create').mockResolvedValue(createdFile);
+      jest.spyOn(filesService, 'create').mockResolvedValue(createdFile as any);
 
       return expect(controller.create({} as CreateFileDto)).resolves.toEqual({
         createdFile,
@@ -87,7 +88,7 @@ describe('FilesController', () => {
     it(`should return the updated file`, () => {
       const updatedFile: File = {} as File;
 
-      jest.spyOn(filesService, 'update').mockResolvedValue(updatedFile);
+      jest.spyOn(filesService, 'update').mockResolvedValue(updatedFile as any);
 
       return expect(
         controller.update('1', {} as UpdateFileDto),
