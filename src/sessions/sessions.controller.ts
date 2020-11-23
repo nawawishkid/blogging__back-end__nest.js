@@ -65,6 +65,7 @@ export class SessionsController {
     return foundSessions;
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<SessionEntity> {
     const foundSession = await this.sessionsService.findOne(id);
@@ -74,6 +75,7 @@ export class SessionsController {
     return foundSession;
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id')
   update(
     @Param('id') id: string,
@@ -82,6 +84,7 @@ export class SessionsController {
     return this.sessionsService.update(id, updateSessionDto);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
