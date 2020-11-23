@@ -1,16 +1,20 @@
 import { User } from '../../users/entities/user.entity';
-import { Column, Entity, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Session {
   @PrimaryColumn()
   id: string;
 
+  @Column()
+  userId: number;
+
   @ManyToOne(
     () => User,
     user => user.sessions,
     { nullable: true },
   )
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column('text')
