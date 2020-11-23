@@ -4,7 +4,7 @@ export class File {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('text')
+  @Column('text', { unique: true })
   path: string;
 
   @Column()
@@ -12,4 +12,7 @@ export class File {
 
   @Column('int')
   size: number;
+
+  @Column('varchar', { nullable: true, unique: true })
+  name?: string;
 }
