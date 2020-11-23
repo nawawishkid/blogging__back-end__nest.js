@@ -25,7 +25,6 @@ export class UsersService {
       select,
     });
 
-    console.log(`foundUser: `, foundUser);
     return foundUser;
   }
 
