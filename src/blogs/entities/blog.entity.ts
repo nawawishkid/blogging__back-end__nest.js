@@ -1,5 +1,5 @@
 import { User } from 'src/users/entities/user.entity';
-import { Column, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 
 export class Blog {
   @PrimaryColumn('uuid')
@@ -17,11 +17,15 @@ export class Blog {
   @Column('text', { nullable: true })
   excerpt?: string;
 
+  @Column('int')
+  authorId: number;
+
   @ManyToOne(
     () => User,
     user => user.blogs,
     { onDelete: 'NO ACTION' },
   )
+  @JoinColumn({ name: 'authorId' })
   author: User;
 
   @Column()
