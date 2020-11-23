@@ -1,4 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
@@ -104,6 +107,14 @@ describe('FilesController', () => {
         controller.update('1', {} as UpdateFileDto),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
+      jest.spyOn(filesService, 'update').mockRejectedValue(new Error());
+
+      return expect(
+        controller.update('1', {} as UpdateFileDto),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
   });
 
   describe(`remove(fileId: string)`, () => {
@@ -121,6 +132,14 @@ describe('FilesController', () => {
         .mockRejectedValue(new FileNotFoundException());
 
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
+    });
+
+    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
+      jest.spyOn(filesService, 'remove').mockRejectedValue(new Error());
+
+      return expect(controller.remove('1')).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });
