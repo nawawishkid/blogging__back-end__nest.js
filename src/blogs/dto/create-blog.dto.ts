@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateBlogDto {
   @IsString()
@@ -6,6 +6,9 @@ export class CreateBlogDto {
 
   @IsString()
   body: string;
+
+  @IsInt()
+  authorId: number;
 
   @IsOptional()
   @IsString()
