@@ -106,12 +106,14 @@ describe('FilesService', () => {
   });
 
   describe(`remove(fileId: number)`, () => {
-    it(`should return nothing if successfully removed`, () => {
+    it(`should return the removed file id`, () => {
+      const fileId = 1;
+
       jest
         .spyOn(filesRepository, 'delete')
         .mockResolvedValue({ affected: 1 } as any);
 
-      return expect(service.remove(1)).resolves.toBeUndefined();
+      return expect(service.remove(fileId)).resolves.toEqual(fileId);
     });
 
     it(`should throw the FileNotFoundException if a file with the given file id could not be found`, () => {
