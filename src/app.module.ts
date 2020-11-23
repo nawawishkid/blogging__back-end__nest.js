@@ -8,6 +8,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import configuration from './config/configuration';
 import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { BlogsModule } from './blogs/blogs.module';
     SessionsModule,
     AuthModule,
     BlogsModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
