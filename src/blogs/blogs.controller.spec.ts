@@ -23,6 +23,7 @@ describe('BlogsController', () => {
         {
           provide: BlogsService,
           useValue: {
+            findOne: jest.fn(),
             findByAuthorId: jest.fn(),
             remove: jest.fn(),
             create: jest.fn(),
@@ -46,7 +47,7 @@ describe('BlogsController', () => {
 
       jest.spyOn(blogsService, 'findByAuthorId').mockResolvedValue(foundBlogs);
 
-      return expect(controller.findAll({} as User)).resolves.toBe({
+      return expect(controller.findAll({} as User)).resolves.toEqual({
         blogs: foundBlogs,
       });
     });
@@ -66,7 +67,9 @@ describe('BlogsController', () => {
 
       jest.spyOn(blogsService, 'findOne').mockResolvedValue(foundBlog);
 
-      return expect(controller.findOne('id')).resolves.toBe(foundBlog);
+      return expect(controller.findOne('id')).resolves.toEqual({
+        blog: foundBlog,
+      });
     });
 
     it(`should throw NotFoundException if the blog with the given id could not be found`, () => {
@@ -86,7 +89,7 @@ describe('BlogsController', () => {
 
       return expect(
         controller.create({} as User, {} as CreateBlogDto),
-      ).resolves.toBe(createdBlog);
+      ).resolves.toEqual({ createdBlog });
     });
 
     it(`should throw the InternalServerErrorException if there is an error thrown by blogsService`, () => {
@@ -106,7 +109,7 @@ describe('BlogsController', () => {
 
       return expect(
         controller.update('blog-id', {} as UpdateBlogDto),
-      ).resolves.toBe(updatedBlog);
+      ).resolves.toEqual({ updatedBlog });
     });
 
     it(`should throw the NotFoundException if the blog with the given id could not be found`, () => {
