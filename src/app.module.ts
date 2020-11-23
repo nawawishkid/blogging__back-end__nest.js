@@ -9,6 +9,7 @@ import configuration from './config/configuration';
 import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { FilesModule } from './files/files.module';
+import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FilesModule } from './files/files.module';
     AuthModule,
     BlogsModule,
     FilesModule,
+    CustomFieldsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
