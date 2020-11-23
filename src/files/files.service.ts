@@ -1,26 +1,47 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
+import { File } from './entities/file.entity';
+import { FileNotFoundException } from './exceptions/file-not-found.exception';
 
 @Injectable()
 export class FilesService {
-  create(createFileDto: CreateFileDto) {
-    return 'This action adds a new file';
+  constructor(
+    @InjectRepository(File) private filesRepository: Repository<File>,
+  ) {}
+
+  create(createFileDto: CreateFileDto): Promise<File> {
+    const { name, file } = createFileDto;
+
+    return this.filesRepository.save({ name, ...file });
   }
 
-  findAll() {
-    return `This action returns all files`;
+  findAll(): Promise<File[]> {
+    return this.filesRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} file`;
+  findOne(id: number): Promise<File> {
+    return this.filesRepository.findOne(id);
   }
 
-  update(id: number, updateFileDto: UpdateFileDto) {
-    return `This action updates a #${id} file`;
+  async update(id: number, updateFileDto: UpdateFileDto): Promise<File> {
+    const updateResult: UpdateResult = await this.filesRepository.update(
+      id,
+      updateFileDto,
+    );
+
+    if (updateResult.affected === 0) throw new FileNotFoundException();
+
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} file`;
+  async remove(id: number): Promise<number> {
+    const deleteResult: DeleteResult = await this.filesRepository.delete(id);
+
+    if (deleteResult.affected === 0) throw new FileNotFoundException();
+
+    return id;
   }
 }
