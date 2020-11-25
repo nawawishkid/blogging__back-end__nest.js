@@ -1,13 +1,21 @@
+import { createLogger, transports } from 'winston';
 import { ExecutionContext } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 
 describe('AuthGuard', () => {
+  let authGuard: AuthGuard;
+
+  beforeEach(() => {
+    authGuard = new AuthGuard(
+      createLogger({ transports: [new transports.Console({ silent: true })] }),
+    );
+  });
+
   it('should be defined', () => {
-    expect(new AuthGuard()).toBeDefined();
+    expect(authGuard).toBeDefined();
   });
 
   it(`should return false if there's no user object on request object`, () => {
-    const authGuard: AuthGuard = new AuthGuard();
     const context: ExecutionContext = ({
       switchToHttp: jest
         .fn()
@@ -18,7 +26,6 @@ describe('AuthGuard', () => {
   });
 
   it(`should return true if there's user object on request object`, () => {
-    const authGuard: AuthGuard = new AuthGuard();
     const context: ExecutionContext = ({
       switchToHttp: jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue({ user: {} }),
