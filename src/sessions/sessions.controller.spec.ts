@@ -1,3 +1,5 @@
+import { createLogger, transports } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import {
   InternalServerErrorException,
   NotFoundException,
@@ -7,6 +9,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SessionData } from 'express-session';
 import { User } from '../users/entities/user.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
+import {
+  CreateSessionResponseDto,
+  FindAllSessionsResponseDto,
+  FindOneSessionResponseDto,
+  UpdateSessionResponseDto,
+} from './dto/response.dto';
 import {
   ExpressSessionDataDto,
   UpdateSessionDto,
@@ -36,6 +44,12 @@ describe('SessionsController', () => {
             remove: jest.fn(),
           },
         },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: createLogger({
+            transports: [new transports.Console({ silent: true })],
+          }),
+        },
       ],
     }).compile();
 
@@ -51,10 +65,11 @@ describe('SessionsController', () => {
     it('should return all sessions of the current user', async () => {
       const user: User = { id: 1 } as User;
       const sessions = [{}] as Session[];
+      const body: FindAllSessionsResponseDto = { sessions };
 
       jest.spyOn(sessionsService, 'findAll').mockResolvedValue(sessions);
 
-      return expect(controller.findAll(user)).resolves.toStrictEqual(sessions);
+      return expect(controller.findAll(user)).resolves.toStrictEqual(body);
     });
 
     it('should throw NotFoundException', async () => {
@@ -69,10 +84,11 @@ describe('SessionsController', () => {
   describe('findOne()', () => {
     it('should return session info', async () => {
       const session = {} as Session;
+      const body: FindOneSessionResponseDto = { session };
 
       jest.spyOn(sessionsService, 'findOne').mockResolvedValue(session);
 
-      return expect(controller.findOne('20')).resolves.toBe(session);
+      return expect(controller.findOne('20')).resolves.toStrictEqual(body);
     });
 
     it('should throw NotFoundException', async () => {
@@ -91,13 +107,14 @@ describe('SessionsController', () => {
         password: 'abc',
       };
       const expressSession = {};
-      const session = {} as Session;
+      const createdSession = {} as Session;
+      const body: CreateSessionResponseDto = { createdSession };
 
-      jest.spyOn(sessionsService, 'create').mockResolvedValue(session);
+      jest.spyOn(sessionsService, 'create').mockResolvedValue(createdSession);
 
       await expect(
         controller.create(createSessionDto, expressSession),
-      ).resolves.toBe(session);
+      ).resolves.toStrictEqual(body);
     });
 
     it(`should throw Http exception`, async () => {
@@ -131,13 +148,14 @@ describe('SessionsController', () => {
         data: { cookie: {} } as SessionData,
         userId: 1,
       };
-      const session = {} as Session;
+      const updatedSession = {} as Session;
+      const body: UpdateSessionResponseDto = { updatedSession };
 
-      jest.spyOn(sessionsService, 'update').mockResolvedValue(session);
+      jest.spyOn(sessionsService, 'update').mockResolvedValue(updatedSession);
 
-      await expect(controller.update('1', updateSessionDto)).resolves.toBe(
-        session,
-      );
+      await expect(
+        controller.update('1', updateSessionDto),
+      ).resolves.toStrictEqual(body);
     });
   });
 

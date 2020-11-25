@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
 import { Repository } from 'typeorm';
@@ -11,34 +13,49 @@ import { Session } from './entities/session.entity';
 
 @Injectable()
 export class SessionsService {
+  private readonly logger: Logger;
+
   constructor(
     @InjectRepository(Session) private sessionsRepository: Repository<Session>,
     private readonly authService: AuthService,
-  ) {}
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly parentLogger: Logger,
+  ) {
+    this.logger = this.parentLogger.child({
+      namespace: `Service:${SessionsService.name}`,
+    });
+  }
 
   async create(
     sid: string,
     createSessionDto: CreateSessionDto,
     session: ExpressSessionDataDto,
   ): Promise<Session> {
+    this.logger.verbose(`create()`);
+    this.logger.verbose(`Creating a new session...`);
     const { email, password } = createSessionDto;
+    this.logger.debug(`email: "${email}"; password: "${password}"`);
+    this.logger.verbose(`Authenticating user with the given credential...`);
 
-    try {
-      const user = await this.authService.authenticate(email, password);
+    /**
+     * @TODO Implement this in guard
+     */
+    const user = await this.authService.authenticate(email, password);
 
-      session.user = { id: user.id };
+    this.logger.debug(`Authenticated user: ${JSON.stringify(user, null, 2)}`);
+    session.user = { id: user.id };
 
-      return this.update(sid, {
-        userId: user.id,
-        data: session,
-      });
-    } catch (e) {
-      throw e;
-    }
+    const createdSession = await this.update(sid, {
+      userId: user.id,
+      data: session,
+    });
+
+    this.logger.verbose(`End of create()`);
+
+    return createdSession;
   }
 
   findAll(userId: number): Promise<Session[]> {
-    return this.sessionsRepository.find({ where: { id: userId } });
+    return this.sessionsRepository.find({ where: { userId } });
   }
 
   findOne(id: string): Promise<Session> {
@@ -49,9 +66,25 @@ export class SessionsService {
     id: string,
     updateSessionDto: UpdateSessionDto,
   ): Promise<Session> {
-    const updatedSession = await this.sessionsRepository.save(
-      this.updateSessionDtoToSessionEntity(id, updateSessionDto),
+    this.logger.verbose(`update()`);
+    this.logger.verbose(`Updating a session...`);
+    this.logger.debug(
+      `Recieved updateSessionDto: ${JSON.stringify(updateSessionDto, null, 2)}`,
     );
+
+    const sessionEntity = this.updateSessionDtoToSessionEntity(
+      id,
+      updateSessionDto,
+    );
+    this.logger.debug(
+      `Mapped session entity: ${JSON.stringify(sessionEntity, null, 2)}`,
+    );
+    const updatedSession = await this.sessionsRepository.save(sessionEntity);
+    this.logger.verbose(`Update session successfully`);
+    this.logger.debug(
+      `Updated session: ${JSON.stringify(updatedSession, null, 2)}`,
+    );
+    this.logger.verbose(`End of update()`);
 
     return updatedSession;
   }

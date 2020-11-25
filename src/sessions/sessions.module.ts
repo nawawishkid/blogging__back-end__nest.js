@@ -36,7 +36,7 @@ const sessionOptionsProvider = getSessionOptionsProvider();
   ],
   controllers: [SessionsController],
   exports: [
-    SessionsStore,
+    SessionsService,
     SessionsStore,
     SessionsMiddleware,
     sessionOptionsProvider,

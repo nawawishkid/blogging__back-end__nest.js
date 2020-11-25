@@ -1,4 +1,5 @@
-import session, { SessionData } from 'express-session';
+import { createLogger, transports } from 'winston';
+import { SessionData } from 'express-session';
 import { ExpressSessionDataDto } from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
 import { SessionsService } from './sessions.service';
@@ -15,7 +16,10 @@ describe(`SessionStore`, () => {
   beforeEach(() => {
     jest.restoreAllMocks();
 
-    sessionStore = new SessionsStore(sessionsService);
+    sessionStore = new SessionsStore(
+      sessionsService,
+      createLogger({ transports: [new transports.Console({ silent: true })] }),
+    );
   });
 
   it(`get(sid, callback) should call the callback with deserialized session data`, async () => {

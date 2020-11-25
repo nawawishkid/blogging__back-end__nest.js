@@ -6,13 +6,13 @@ export class Session {
   @PrimaryColumn()
   id: string;
 
-  @Column()
+  @Column({ nullable: true })
   userId: number;
 
   @ManyToOne(
     () => User,
     user => user.sessions,
-    { nullable: true },
+    { nullable: true, onDelete: 'CASCADE' },
   )
   @JoinColumn({ name: 'userId' })
   user: User;

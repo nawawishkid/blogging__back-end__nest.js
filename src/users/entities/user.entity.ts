@@ -50,14 +50,13 @@ export class User {
   @IsString()
   lastName: string;
 
-  @Column({ type: 'datetime' })
-  @IsDateString()
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  // @IsString()
   createdAt: string;
 
   @OneToMany(
     () => Session,
     session => session.user,
-    { onDelete: 'CASCADE' },
   )
   @Exclude()
   sessions: Session[];

@@ -1,7 +1,9 @@
+import { createLogger, transports } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
-import { Repository } from 'typeorm';
+import { FindConditions, FindOneOptions, Repository } from 'typeorm';
 import {
   ExpressSessionDataDto,
   UpdateSessionDto,
@@ -33,6 +35,12 @@ describe('SessionsService', () => {
           },
         },
         { provide: AuthService, useValue: { authenticate: jest.fn() } },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: createLogger({
+            transports: [new transports.Console({ silent: true })],
+          }),
+        },
       ],
     }).compile();
 
@@ -49,11 +57,20 @@ describe('SessionsService', () => {
 
   describe('findAll(userId: number)', () => {
     it('should return all sessions of given user id', async () => {
+      const userId = 1;
       const sessionEntities: Session[] = [{ data: 'abc' } as Session];
+      let receivedUserId;
 
-      jest.spyOn(sessionsRepository, 'find').mockResolvedValue(sessionEntities);
+      jest
+        .spyOn(sessionsRepository, 'find')
+        .mockImplementation((condition: any) => {
+          receivedUserId = condition.where.userId;
 
-      await expect(service.findAll(1)).resolves.toBe(sessionEntities);
+          return Promise.resolve(sessionEntities);
+        });
+
+      await expect(service.findAll(userId)).resolves.toBe(sessionEntities);
+      expect(receivedUserId).toEqual(userId);
     });
   });
 

@@ -1,3 +1,6 @@
+import * as chalk from 'chalk';
+import * as winston from 'winston';
+import { WinstonModule } from 'nest-winston';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,13 +15,64 @@ import { FilesModule } from './files/files.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 
 const envFilePath = ['.env'];
+const transports: winston.transport[] = [
+  new winston.transports.Console({
+    level: 'debug',
+    format: winston.format.combine(
+      winston.format((info, opts) => {
+        info.namespace = chalk.yellow(info.namespace);
+        info.requestId = chalk.green(info.requestId);
+        info.timestamp = chalk.magenta(info.timestamp);
+
+        if (info.level === 'debug') {
+          info.level = chalk.magentaBright(info.level);
+          info.message = chalk.magentaBright(info.message);
+        } else {
+          const color = winston.config.npm.colors[info.level];
+
+          if (typeof color === 'string' && typeof chalk[color] === 'function') {
+            info.level = chalk[color](info.level);
+            info.message = chalk[color](info.message);
+          }
+        }
+
+        return info;
+      })(),
+      winston.format.printf(
+        ({ message, level, timestamp, namespace, json, requestId }) =>
+          `${namespace} ${
+            requestId ? requestId + ' ' : ''
+          }${level} ${timestamp}: ${message}${
+            json ? ' ' + JSON.stringify(json, null, 2) : ''
+          }`,
+      ),
+    ),
+  }),
+];
 
 if (process.env.NODE_ENV === 'test') {
   envFilePath.unshift('.env.test');
 }
 
+if (process.env.NODE_ENV === 'production') {
+  transports.push(
+    new winston.transports.File({
+      filename: 'error.log',
+      level: 'error',
+    }),
+  );
+}
+
 @Module({
   imports: [
+    WinstonModule.forRoot({
+      level: 'debug',
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.prettyPrint(),
+      ),
+      transports,
+    }),
     ConfigModule.forRoot({
       load: [configuration],
       envFilePath,
