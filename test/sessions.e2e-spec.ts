@@ -1,6 +1,6 @@
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import * as request from 'supertest';
+import supertest, * as request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
@@ -10,12 +10,20 @@ import { User } from '../src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { CreateSessionResponseDto } from 'src/sessions/dto/response.dto';
+import { UpdateSessionDto } from 'src/sessions/dto/update-session.dto';
+
+const sendCreateSessionRequest = (
+  agent: supertest.SuperAgentTest,
+): supertest.Test =>
+  agent
+    .post(`/sessions`)
+    .send({ email: 'some@email.com', password: 'password' });
 
 describe(`Session controller`, () => {
   let app: INestApplication,
     agent: request.SuperAgentTest,
     authService: AuthService,
-    path: string,
     ur: Repository<User>,
     createdUser: User;
 
@@ -60,13 +68,11 @@ describe(`Session controller`, () => {
 
   describe('/sessions', () => {
     describe(`POST`, () => {
-      path = '/sessions';
-
       it(`should 201:{createdSession: Session}`, () => {
         jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
 
         return agent
-          .post(path)
+          .post('/sessions')
           .send({ email: createdUser.email, password: createdUser.password })
           .expect(201)
           .expect(res => {
@@ -76,10 +82,10 @@ describe(`Session controller`, () => {
                 data: expect.any(String),
                 expiresAt: expect.any(String),
                 createdAt: expect.any(String),
+                isRevoked: false,
+                userId: createdUser.id,
               }),
             );
-            expect(res.body.createdSession.isRevoked).toEqual(false);
-            expect(res.body.createdSession.userId).toEqual(createdUser.id);
           });
       });
 
@@ -87,24 +93,25 @@ describe(`Session controller`, () => {
         const invalidCreateSessionDto = {};
 
         return agent
-          .post(path)
+          .post('/sessions')
           .send(invalidCreateSessionDto)
           .expect(400);
       });
     });
 
     describe('GET', () => {
-      path = '/sessions';
-
       it('should respond with all sessions of the current user', async () => {
+        const agent2: supertest.SuperAgentTest = request.agent(
+          app.getHttpServer(),
+        );
+
         jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
 
-        await agent
-          .post(path)
-          .send({ email: 'some@email.com', password: 'password' });
+        await sendCreateSessionRequest(agent);
+        await sendCreateSessionRequest(agent2);
 
         return agent
-          .get(path)
+          .get('/sessions')
           .expect(200)
           .expect(res => {
             expect(res.body.sessions).toEqual(
@@ -117,11 +124,127 @@ describe(`Session controller`, () => {
                 }),
               ]),
             );
+            expect(res.body.sessions.length).toEqual(2);
           });
       });
 
       it(`should 403`, () => {
-        return agent.get(path).expect(403);
+        return agent.get('/sessions').expect(403);
+      });
+    });
+  });
+
+  describe(`/sessions/:sessionId`, () => {
+    describe(`GET`, () => {
+      it(`should 200:{session:Session}`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        const {
+          createdSession,
+        }: CreateSessionResponseDto = await sendCreateSessionRequest(
+          agent,
+        ).then(res => res.body);
+
+        return agent
+          .get(`/sessions/${createdSession.id}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.session).toEqual(
+              expect.objectContaining({
+                id: expect.any(String),
+                data: expect.any(String),
+                expiresAt: expect.any(String),
+                createdAt: expect.any(String),
+                isRevoked: false,
+                userId: createdUser.id,
+              }),
+            );
+          });
+      });
+
+      it(`should 403`, () => {
+        return agent.get('/sessions/abc').expect(403);
+      });
+
+      it(`should 404`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        await sendCreateSessionRequest(agent);
+
+        return agent.get('/sessions/abc').expect(404);
+      });
+    });
+
+    describe(`PUT`, () => {
+      it(`should 200:{updatedSession:Session}`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        const {
+          createdSession,
+        }: CreateSessionResponseDto = await sendCreateSessionRequest(
+          agent,
+        ).then(res => res.body);
+        const updateSessionDto: UpdateSessionDto = { isRevoked: true };
+
+        return agent
+          .put(`/sessions/${createdSession.id}`)
+          .send(updateSessionDto)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.updatedSession).toEqual(
+              expect.objectContaining({
+                id: createdSession.id,
+                data: expect.any(String),
+                isRevoked: true,
+                userId: createdUser.id,
+              }),
+            );
+          });
+      });
+
+      it(`should 400`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        const {
+          createdSession,
+        }: CreateSessionResponseDto = await sendCreateSessionRequest(
+          agent,
+        ).then(res => res.body);
+
+        return agent
+          .put(`/sessions/${createdSession.id}`)
+          .send({ data: {} })
+          .expect(400);
+      });
+
+      it(`should 403`, () => {
+        return agent.put('/sessions/abc').expect(403);
+      });
+    });
+
+    describe(`DELETE`, () => {
+      it(`should 204`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        const {
+          createdSession,
+        }: CreateSessionResponseDto = await sendCreateSessionRequest(
+          agent,
+        ).then(res => res.body);
+
+        return agent.delete(`/sessions/${createdSession.id}`).expect(204);
+      });
+
+      it(`should 404`, async () => {
+        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
+
+        await sendCreateSessionRequest(agent);
+
+        return agent.delete(`/sessions/some-id`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        return agent.delete(`/sessions/some-id`).expect(403);
       });
     });
   });

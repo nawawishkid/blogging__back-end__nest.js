@@ -54,11 +54,13 @@ describe(`SessionStore`, () => {
       user: { id: 1000 },
     } as unknown) as ExpressSessionDataDto;
 
-    jest.spyOn(sessionsService, 'update').mockImplementation((sid, sess) => {
-      db[sid] = sess;
+    jest
+      .spyOn(sessionsService, 'update')
+      .mockImplementation((sid, sess, updateDto) => {
+        db[sid] = { ...sess, ...updateDto };
 
-      return Promise.resolve({} as Session);
-    });
+        return Promise.resolve({} as Session);
+      });
 
     await sessionStore.set(sid, sessionData, () => {});
 

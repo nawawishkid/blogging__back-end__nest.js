@@ -1,5 +1,3 @@
-import { Logger } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import {
   Session,
   Controller,
@@ -14,11 +12,13 @@ import {
   UnauthorizedException,
   InternalServerErrorException,
   UseGuards,
-  Inject,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
-import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  ExpressSessionDataDto,
+  UpdateSessionDto,
+} from './dto/update-session.dto';
 import { Session as SessionEntity } from './entities/session.entity';
 import { User } from '../users/user.decorator';
 import { User as UserEntity } from '../users/entities/user.entity';
@@ -31,28 +31,17 @@ import {
   FindOneSessionResponseDto,
   UpdateSessionResponseDto,
 } from './dto/response.dto';
+import { SessionNotFoundException } from './exceptions/session-not-found.exception';
 
 @Controller('sessions')
 export class SessionsController {
-  private readonly logger: Logger;
-
-  constructor(
-    private readonly sessionsService: SessionsService,
-    @Inject(WINSTON_MODULE_PROVIDER) private readonly parentLogger: Logger,
-  ) {
-    this.logger = this.parentLogger.child({
-      namespace: `Controller:${SessionsController.name}`,
-    });
-  }
+  constructor(private readonly sessionsService: SessionsService) {}
 
   @Post()
   async create(
     @Body() createSessionDto: CreateSessionDto,
     @Session() session,
   ): Promise<CreateSessionResponseDto> {
-    this.logger.verbose(`create()`);
-    this.logger.verbose('Creating session...');
-
     try {
       const createdSession = await this.sessionsService.create(
         session.id,
@@ -60,47 +49,30 @@ export class SessionsController {
         session,
       );
 
-      this.logger.verbose(`Create a new session successfully`);
-      this.logger.debug(
-        `Created session ${JSON.stringify(createdSession, null, 2)}`,
-      );
-
       return { createdSession };
     } catch (e) {
-      this.logger.verbose(`An error occurred while creating a new session`);
-      this.logger.error(e);
       if (
         e instanceof EmailNotFoundException ||
         e instanceof IncorrectPasswordException
       ) {
-        this.logger.verbose(`Throw UnauthorizedException`);
         throw new UnauthorizedException();
       }
 
-      this.logger.verbose(`Throw InternalServerErrorException`);
       throw new InternalServerErrorException(e);
-    } finally {
-      this.logger.verbose(`End of create()`);
     }
   }
 
   @UseGuards(AuthGuard)
   @Get()
   async findAll(@User() user: UserEntity): Promise<FindAllSessionsResponseDto> {
-    this.logger.debug(`findAll()`);
-    this.logger.verbose(`Getting sessions of the user with id: ${user.id}`);
     const sessions:
       | SessionEntity[]
       | undefined = await this.sessionsService.findAll(user.id);
 
-    this.logger.verbose(`Found ${sessions ? sessions.length : '0'} session(s)`);
-
     if (!sessions || (Array.isArray(sessions) && sessions.length === 0)) {
-      this.logger.debug(`End of findAll()`);
       throw new NotFoundException();
     }
 
-    this.logger.debug(`End of findAll()`);
     return { sessions };
   }
 
@@ -118,12 +90,17 @@ export class SessionsController {
   @Put(':id')
   async update(
     @Param('id') id: string,
+    @User() user: UserEntity,
+    @Session() session: ExpressSessionDataDto,
     @Body() updateSessionDto: UpdateSessionDto,
   ): Promise<UpdateSessionResponseDto> {
-    this.logger.verbose(`Updating a session...`);
+    if (!('userId' in updateSessionDto)) {
+      updateSessionDto.userId = user.id;
+    }
 
     const updatedSession = await this.sessionsService.update(
       id,
+      session,
       updateSessionDto,
     );
 
@@ -134,8 +111,14 @@ export class SessionsController {
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
-    const deletedSessionId = await this.sessionsService.remove(id);
+    try {
+      await this.sessionsService.remove(id);
+    } catch (e) {
+      if (e instanceof SessionNotFoundException) {
+        throw new NotFoundException();
+      }
 
-    if (deletedSessionId === null) throw new NotFoundException();
+      throw new InternalServerErrorException();
+    }
   }
 }

@@ -17,7 +17,7 @@ export class Session {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column('text')
+  @Column('text', { default: '' })
   data: string;
 
   @Column({ default: false })

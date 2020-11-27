@@ -17,7 +17,12 @@ export class AppExceptionFilter implements ExceptionFilter {
 
   catch(e: unknown, host: ArgumentsHost) {
     const namespace = `Filter:${AppExceptionFilter.name}`;
+
+    this.logger.debug(`catch()`, { namespace });
+    this.logger.verbose(`Catching an exception...`, { namespace });
+
     const res = host.switchToHttp().getResponse<Response>();
+    let status, json;
 
     this.logger.error(`An unhandled error occurred:`, {
       namespace,
@@ -25,16 +30,30 @@ export class AppExceptionFilter implements ExceptionFilter {
     });
 
     if (res.headersSent) {
-      this.logger.debug(`Header has already been sent. Stop response process`, {
-        namespace,
-      });
+      this.logger.verbose(
+        `Header has already been sent. Stop response process`,
+        {
+          namespace,
+        },
+      );
       return;
     }
 
     if (e instanceof HttpException) {
-      return res.status(e.getStatus()).json(e.getResponse());
+      status = e.getStatus();
+      json = e.getResponse();
+    } else {
+      status = 500;
+      json = e;
     }
 
-    res.status(500).json(e);
+    this.logger.debug(`Respond with status ${status} and body:`, {
+      json,
+      namespace,
+    });
+
+    res.status(status).json(json);
+
+    this.logger.debug(`End of catch()`, { namespace });
   }
 }

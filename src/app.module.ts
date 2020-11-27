@@ -39,12 +39,24 @@ const transports: winston.transport[] = [
         return info;
       })(),
       winston.format.printf(
-        ({ message, level, timestamp, namespace, json, requestId }) =>
-          `${namespace} ${
+        ({ message, level, timestamp, namespace, json, requestId }) => {
+          let obj: any = '';
+
+          if (json) {
+            /**
+             * Prevent stringifying native JS Error object to empty object literal
+             */
+            if (json instanceof Error) {
+              obj = ' ' + json.stack;
+            } else {
+              obj = ' ' + JSON.stringify(json, null, 2);
+            }
+          }
+
+          return `${namespace} ${
             requestId ? requestId + ' ' : ''
-          }${level} ${timestamp}: ${message}${
-            json ? ' ' + JSON.stringify(json, null, 2) : ''
-          }`,
+          }${level} ${timestamp} ${message}${obj}`;
+        },
       ),
     ),
   }),

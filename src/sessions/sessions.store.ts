@@ -1,12 +1,9 @@
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import debugPkg from 'debug';
 import { Inject, Injectable } from '@nestjs/common';
 import { SessionData, Store } from 'express-session';
 import { SessionsService } from './sessions.service';
 import { ExpressSessionDataDto } from './dto/update-session.dto';
-
-const debug = debugPkg('blogging:module:sessions:store');
 
 @Injectable()
 export class SessionsStore extends Store {
@@ -63,9 +60,8 @@ export class SessionsStore extends Store {
     this.logger.debug(`Session: ${JSON.stringify(session, null, 2)}`);
 
     return this.sessionsService
-      .update(sid, {
+      .update(sid, session, {
         userId: session.user ? session.user.id : undefined,
-        data: session,
       })
       .then(() => {
         callback(null);

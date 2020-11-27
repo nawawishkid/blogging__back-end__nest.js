@@ -1,19 +1,15 @@
-import { createLogger, transports } from 'winston';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import {
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { SessionData } from 'express-session';
 import { User } from '../users/entities/user.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import {
   CreateSessionResponseDto,
   FindAllSessionsResponseDto,
   FindOneSessionResponseDto,
-  UpdateSessionResponseDto,
 } from './dto/response.dto';
 import {
   ExpressSessionDataDto,
@@ -24,6 +20,7 @@ import { EmailNotFoundException } from './exceptions/email-not-found.exception';
 import { IncorrectPasswordException } from './exceptions/incorrect-password.exception';
 import { SessionsController } from './sessions.controller';
 import { SessionsService } from './sessions.service';
+import { SessionNotFoundException } from './exceptions/session-not-found.exception';
 
 describe('SessionsController', () => {
   let controller: SessionsController, sessionsService: SessionsService;
@@ -43,12 +40,6 @@ describe('SessionsController', () => {
             update: jest.fn(),
             remove: jest.fn(),
           },
-        },
-        {
-          provide: WINSTON_MODULE_PROVIDER,
-          useValue: createLogger({
-            transports: [new transports.Console({ silent: true })],
-          }),
         },
       ],
     }).compile();
@@ -144,18 +135,58 @@ describe('SessionsController', () => {
 
   describe('update()', () => {
     it('should return updated session', async () => {
+      const sid = 'hahaha';
+      const user = { id: 1 } as User;
+      const expressSessionDataDto = ({
+        aloha: 'ok',
+      } as unknown) as ExpressSessionDataDto;
       const updateSessionDto: UpdateSessionDto = {
-        data: { cookie: {} } as SessionData,
-        userId: 1,
+        isRevoked: true,
       };
-      const updatedSession = {} as Session;
-      const body: UpdateSessionResponseDto = { updatedSession };
 
-      jest.spyOn(sessionsService, 'update').mockResolvedValue(updatedSession);
+      jest
+        .spyOn(sessionsService, 'update')
+        .mockImplementation((sid, session, updateDto) => {
+          return Promise.resolve({
+            id: sid,
+            data: JSON.stringify(session),
+            ...updateDto,
+          } as any);
+        });
 
-      await expect(
-        controller.update('1', updateSessionDto),
-      ).resolves.toStrictEqual(body);
+      expect(
+        await controller.update(
+          sid,
+          user,
+          expressSessionDataDto,
+          updateSessionDto,
+        ),
+      ).toStrictEqual({
+        updatedSession: {
+          id: sid,
+          data: JSON.stringify(expressSessionDataDto),
+          isRevoked: updateSessionDto.isRevoked,
+          userId: user.id,
+        },
+      });
+
+      updateSessionDto.userId = 1000;
+
+      expect(
+        await controller.update(
+          sid,
+          user,
+          expressSessionDataDto,
+          updateSessionDto,
+        ),
+      ).toStrictEqual({
+        updatedSession: {
+          id: sid,
+          data: JSON.stringify(expressSessionDataDto),
+          isRevoked: updateSessionDto.isRevoked,
+          userId: updateSessionDto.userId,
+        },
+      });
     });
   });
 
@@ -165,9 +196,19 @@ describe('SessionsController', () => {
     });
 
     it('should throw NotFoundException', async () => {
-      jest.spyOn(sessionsService, 'remove').mockResolvedValue(null);
+      jest
+        .spyOn(sessionsService, 'remove')
+        .mockRejectedValue(new SessionNotFoundException());
 
       await expect(controller.remove('1')).rejects.toThrow(NotFoundException);
+    });
+
+    it(`should throw the InternalServerErrorException if there is another error thrown by sessionsService`, () => {
+      jest.spyOn(sessionsService, 'remove').mockRejectedValue(new Error());
+
+      return expect(controller.remove('1')).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });
