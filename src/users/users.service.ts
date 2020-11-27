@@ -1,9 +1,17 @@
+import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import {
+  DeleteResult,
+  QueryFailedError,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { UserAlreadyExistsException } from './exceptions/user-already-exists.exception';
+import { UserNotFoundException } from './exceptions/user-not-found.exception';
 
 @Injectable()
 export class UsersService {
@@ -11,8 +19,26 @@ export class UsersService {
     @InjectRepository(User) private usersRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto): Promise<User> {
-    return this.usersRepository.save(createUserDto);
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    try {
+      // Prevent upsertion from repo.save() method
+      delete (createUserDto as any).id;
+
+      const createdUser: User = await this.usersRepository.save(createUserDto);
+
+      delete createdUser.password;
+
+      return createdUser;
+    } catch (e) {
+      if (
+        ((e instanceof QueryFailedError) as any) &&
+        e.errno === ER_DUP_ENTRY
+      ) {
+        throw new UserAlreadyExistsException();
+      }
+
+      throw e;
+    }
   }
 
   findOne(id: number): Promise<User> {
@@ -29,10 +55,14 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const updatedUser: User = await this.usersRepository.save({
+    const updateResult: UpdateResult = await this.usersRepository.update(
       id,
-      ...updateUserDto,
-    });
+      updateUserDto,
+    );
+
+    if (updateResult.affected === 0) throw new UserNotFoundException();
+
+    const updatedUser: User = await this.findOne(id);
 
     return updatedUser;
   }
@@ -40,6 +70,8 @@ export class UsersService {
   async remove(id: number): Promise<number> {
     const deleteResult: DeleteResult = await this.usersRepository.delete(id);
 
-    return deleteResult.affected;
+    if (deleteResult.affected === 0) throw new UserNotFoundException();
+
+    return id;
   }
 }

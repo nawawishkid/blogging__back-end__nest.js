@@ -29,7 +29,12 @@ export async function bootstrap(app: INestApplication) {
      * Just opened an issue about this issue:
      * @see https://github.com/nestjs/docs.nestjs.com/issues/1566
      */
-    new ValidationPipe({ transform: true, validateCustomDecorators: true }),
+    new ValidationPipe({
+      transform: true,
+      validateCustomDecorators: true,
+      forbidNonWhitelisted: true,
+      whitelist: true,
+    }),
   );
   app.useGlobalFilters(new AppExceptionFilter(logger));
 

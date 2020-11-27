@@ -66,4 +66,8 @@ export class User {
     blog => blog.author,
   )
   blogs: Blog[];
+
+  constructor(partial: Partial<User>) {
+    Object.assign(this, partial);
+  }
 }

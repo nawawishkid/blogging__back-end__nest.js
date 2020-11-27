@@ -100,7 +100,7 @@ if (process.env.NODE_ENV === 'production') {
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: process.env.NODE_ENV !== 'production',
       }),
     }),
     UsersModule,
