@@ -25,7 +25,8 @@ describe(`Session controller`, () => {
     agent: request.SuperAgentTest,
     authService: AuthService,
     ur: Repository<User>,
-    createdUser: User;
+    createdUser: User,
+    logger: Logger;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -54,8 +55,8 @@ describe(`Session controller`, () => {
 
     app = moduleFixture.createNestApplication();
     app = await bootstrap(app);
-
-    app.get<Logger>(WINSTON_MODULE_PROVIDER).silent = true;
+    logger = app.get<Logger>(WINSTON_MODULE_PROVIDER);
+    logger.silent = true;
 
     await app.init();
 

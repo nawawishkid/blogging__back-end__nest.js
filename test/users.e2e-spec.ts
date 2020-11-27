@@ -10,7 +10,6 @@ import { Repository } from 'typeorm';
 import { User } from '../src/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UpdateUserDto } from '../src/users/dto/update-user.dto';
-import { AuthService } from '../src/auth/auth.service';
 import { AuthGuard } from '../src/auth.guard';
 
 function sendCreateUserRequest(
@@ -33,7 +32,6 @@ describe(`Users e2e`, () => {
     agent: supertest.SuperAgentTest,
     logger: Logger,
     ur: Repository<User>,
-    authService: AuthService,
     authGuard: AuthGuard;
 
   beforeEach(async () => {
@@ -45,7 +43,6 @@ describe(`Users e2e`, () => {
       .compile();
 
     ur = module.get<Repository<User>>(getRepositoryToken(User));
-    authService = module.get<AuthService>(AuthService);
     authGuard = module.get<AuthGuard>(AuthGuard);
 
     ur.query(`DELETE FROM ${ur.metadata.tableName}`);

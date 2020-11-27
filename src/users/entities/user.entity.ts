@@ -9,7 +9,7 @@ import {
 import { Exclude } from 'class-transformer';
 import {
   IsBoolean,
-  IsDateString,
+  IsDate,
   IsEmail,
   IsInt,
   IsOptional,
@@ -51,7 +51,7 @@ export class User {
   lastName: string;
 
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-  // @IsString()
+  @IsDate()
   createdAt: string;
 
   @OneToMany(
