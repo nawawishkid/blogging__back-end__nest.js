@@ -14,6 +14,6 @@ export class File {
   @Column('int')
   size: number;
 
-  @Column('varchar', { nullable: true, unique: true })
+  @Column('varchar', { nullable: true })
   name?: string;
 }

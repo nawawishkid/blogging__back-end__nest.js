@@ -1,3 +1,4 @@
+import { diskStorage } from 'multer';
 import {
   Controller,
   Get,
@@ -9,9 +10,11 @@ import {
   HttpCode,
   NotFoundException,
   InternalServerErrorException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { CreateFileDto } from './dto/create-file.dto';
+import { CreateFileDto, MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
@@ -21,16 +24,39 @@ import {
   FindOneFileResponseDto,
   UpdateFileResponseDto,
 } from './dto/response.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
+  @UseInterceptors(
+    FileInterceptor(`file`, {
+      storage: diskStorage({
+        destination: 'public',
+        filename(_, file, cb) {
+          const splittedFilename = file.originalname.split('.');
+          const ext = splittedFilename[splittedFilename.length - 1];
+          const name =
+            splittedFilename.length > 2
+              ? splittedFilename.slice(0, -1).join('.')
+              : splittedFilename[0];
+          const [month, day, year] = new Date()
+            .toLocaleDateString('en-US')
+            .split('/');
+          const date = [year, month, day].join('-');
+
+          cb(null, `${date}-${name}-${Date.now()}.${ext}`);
+        },
+      }),
+    }),
+  )
   @Post()
   async create(
-    @Body() createFileDto: CreateFileDto,
+    @UploadedFile() file: MulterFile,
   ): Promise<CreateFileResponseDto> {
-    const createdFile: File = await this.filesService.create(createFileDto);
+    console.log(`file: `, file);
+    const createdFile: File = await this.filesService.create(file);
 
     return { createdFile };
   }

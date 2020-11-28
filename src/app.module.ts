@@ -19,7 +19,6 @@ import { resolve } from 'path';
 const envFilePath = ['.env'];
 const transports: winston.transport[] = [
   new winston.transports.Console({
-    level: 'debug',
     format: winston.format.combine(
       winston.format((info, opts) => {
         info.namespace = chalk.yellow(info.namespace);
@@ -79,17 +78,21 @@ if (process.env.NODE_ENV === 'production') {
 
 @Module({
   imports: [
-    WinstonModule.forRoot({
-      level: 'debug',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.prettyPrint(),
-      ),
-      transports,
-    }),
     ConfigModule.forRoot({
-      load: [configuration],
+      load: [configuration(process.env as any)],
       envFilePath,
+    }),
+    WinstonModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        level: configService.get<string>('logging.level'),
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.prettyPrint(),
+        ),
+        transports,
+      }),
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
