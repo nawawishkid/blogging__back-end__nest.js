@@ -7,12 +7,15 @@ import { AppModule } from '../src/app.module';
 import { bootstrap } from '../src/bootstrap';
 import { AuthService } from '../src/auth/auth.service';
 import { User } from '../src/users/entities/user.entity';
-import { Repository } from 'typeorm';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getConnection, Repository } from 'typeorm';
+import { getRepositoryToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { CreateSessionResponseDto } from 'src/sessions/dto/response.dto';
 import { UpdateSessionDto } from 'src/sessions/dto/update-session.dto';
+import { TYPEORM_MODULE_OPTIONS } from '@nestjs/typeorm/dist/typeorm.constants';
+import { ConfigService } from '@nestjs/config';
 
+const TABLE_PREFIX = 'e2esession_';
 const sendCreateSessionRequest = (
   agent: supertest.SuperAgentTest,
 ): supertest.Test =>
@@ -36,6 +39,22 @@ describe(`Session controller`, () => {
     })
       .overrideProvider(AuthService)
       .useValue({ authenticate: () => null })
+      .overrideProvider(TYPEORM_MODULE_OPTIONS)
+      .useFactory({
+        inject: [ConfigService],
+        factory: (configService: ConfigService): TypeOrmModuleOptions => ({
+          type: 'mysql',
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          username: configService.get<string>('database.username'),
+          password: configService.get<string>('database.password'),
+          database: configService.get<string>('database.name'),
+          autoLoadEntities: true,
+          synchronize: true,
+          entityPrefix: TABLE_PREFIX,
+          keepConnectionAlive: true,
+        }),
+      })
       .compile();
 
     authService = moduleFixture.get<AuthService>(AuthService);
@@ -43,7 +62,7 @@ describe(`Session controller`, () => {
 
     await ur.query(`DELETE FROM ${ur.metadata.tableName}`);
     await ur.query(`ALTER TABLE ${ur.metadata.tableName} AUTO_INCREMENT = 1`);
-    await ur.query(`DELETE FROM session`);
+    await ur.query(`DELETE FROM ${TABLE_PREFIX}session`);
 
     const user: CreateUserDto = {
       username: 'nawawishkid',
@@ -64,8 +83,13 @@ describe(`Session controller`, () => {
   });
 
   afterEach(async () => {
+    await ur.query(`DELETE FROM ${ur.metadata.tableName}`);
+    await ur.query(`ALTER TABLE ${ur.metadata.tableName} AUTO_INCREMENT = 1`);
+    await ur.query(`DELETE FROM ${TABLE_PREFIX}session`);
     await app.close();
   });
+
+  afterAll(() => getConnection().close());
 
   describe('/sessions', () => {
     describe(`POST`, () => {

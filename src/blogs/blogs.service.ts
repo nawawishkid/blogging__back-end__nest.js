@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
@@ -13,7 +14,7 @@ export class BlogsService {
   ) {}
 
   create(createBlogDto: CreateBlogDto) {
-    return this.blogsRepository.save(createBlogDto);
+    return this.blogsRepository.save({ ...createBlogDto, id: nanoid() });
   }
 
   async findByAuthorId(userId: number): Promise<Blog[]> | undefined {

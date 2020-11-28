@@ -7,9 +7,10 @@ import {
   Param,
   Delete,
   NotFoundException,
-  InternalServerErrorException,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '../auth.guard';
 import { User as UserEntity } from '../users/entities/user.entity';
 import { User } from '../users/user.decorator';
 import { BlogsService } from './blogs.service';
@@ -29,6 +30,7 @@ import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
   async create(
     @User() user: UserEntity,
@@ -39,15 +41,12 @@ export class BlogsController {
       ...createBlogRequestBodyDto,
     };
 
-    try {
-      const createdBlog = await this.blogsService.create(createBlogDto);
+    const createdBlog = await this.blogsService.create(createBlogDto);
 
-      return { createdBlog };
-    } catch (e) {
-      throw new InternalServerErrorException();
-    }
+    return { createdBlog };
   }
 
+  @UseGuards(AuthGuard)
   @Get()
   async findAll(@User() user: UserEntity): Promise<FindAllBlogsResponseDto> {
     const foundBlogs: Blog[] = await this.blogsService.findByAuthorId(user.id);
@@ -57,6 +56,7 @@ export class BlogsController {
     return { blogs: foundBlogs };
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<FindOneBlogResponseDto> {
     const foundBlog: Blog = await this.blogsService.findOne(id);
@@ -66,6 +66,7 @@ export class BlogsController {
     return { blog: foundBlog };
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -81,10 +82,11 @@ export class BlogsController {
     } catch (e) {
       if (e instanceof BlogNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
@@ -93,7 +95,7 @@ export class BlogsController {
     } catch (e) {
       if (e instanceof BlogNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 }

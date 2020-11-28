@@ -1,7 +1,4 @@
-import {
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { User } from 'src/users/entities/user.entity';
 import { BlogsController } from './blogs.controller';
@@ -91,14 +88,6 @@ describe('BlogsController', () => {
         controller.create({} as User, {} as CreateBlogDto),
       ).resolves.toEqual({ createdBlog });
     });
-
-    it(`should throw the InternalServerErrorException if there is an error thrown by blogsService`, () => {
-      jest.spyOn(blogsService, 'create').mockRejectedValueOnce(new Error());
-
-      return expect(
-        controller.create({} as User, {} as CreateBlogDto),
-      ).rejects.toThrow(InternalServerErrorException);
-    });
   });
 
   describe(`update(blogId: string, updateBlogDto: UpdateBlogDto)`, () => {
@@ -121,14 +110,6 @@ describe('BlogsController', () => {
         controller.update('blog-id', {} as UpdateBlogDto),
       ).rejects.toThrow(NotFoundException);
     });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by blogsService`, () => {
-      jest.spyOn(blogsService, 'update').mockRejectedValue(new Error());
-
-      return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
-      ).rejects.toThrow(InternalServerErrorException);
-    });
   });
 
   describe(`remove(blogId: string)`, () => {
@@ -145,14 +126,6 @@ describe('BlogsController', () => {
 
       return expect(controller.remove('blog-id')).rejects.toThrow(
         NotFoundException,
-      );
-    });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by the blogsService`, () => {
-      jest.spyOn(blogsService, 'remove').mockRejectedValue(new Error());
-
-      return expect(controller.remove('blog-id')).rejects.toThrow(
-        InternalServerErrorException,
       );
     });
   });

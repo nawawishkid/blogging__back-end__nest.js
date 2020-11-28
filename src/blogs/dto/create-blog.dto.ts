@@ -4,8 +4,9 @@ export class CreateBlogDto {
   @IsString()
   title: string;
 
+  @IsOptional()
   @IsString()
-  body: string;
+  body?: string;
 
   @IsInt()
   authorId: number;

@@ -1,4 +1,3 @@
-import { createLogger, transports } from 'winston';
 import { ExecutionContext } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
 
@@ -6,9 +5,7 @@ describe('AuthGuard', () => {
   let authGuard: AuthGuard;
 
   beforeEach(() => {
-    authGuard = new AuthGuard(
-      createLogger({ transports: [new transports.Console({ silent: true })] }),
-    );
+    authGuard = new AuthGuard();
   });
 
   it('should be defined', () => {

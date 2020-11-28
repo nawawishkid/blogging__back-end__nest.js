@@ -4,8 +4,9 @@ export class CreateBlogRequestBodyDto {
   @IsString()
   title: string;
 
+  @IsOptional()
   @IsString()
-  body: string;
+  body?: string;
 
   @IsOptional()
   @IsString()

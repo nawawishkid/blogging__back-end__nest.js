@@ -1,5 +1,13 @@
 import { User } from '../../users/entities/user.entity';
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Blog {
@@ -9,10 +17,10 @@ export class Blog {
   @Column('varchar')
   title: string;
 
-  @Column('text')
-  body: string;
+  @Column('text', { nullable: true })
+  body?: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   coverImage: string;
 
   @Column('text', { nullable: true })
@@ -29,12 +37,12 @@ export class Blog {
   @JoinColumn({ name: 'authorId' })
   author: User;
 
-  @Column()
+  @Column({ nullable: true })
   metadata: string;
 
-  @Column('datetime', { default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'datetime' })
   createdAt: string;
 
-  @Column('datetime')
+  @UpdateDateColumn({ type: 'datetime' })
   updatedAt: string;
 }

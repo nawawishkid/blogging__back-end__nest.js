@@ -9,14 +9,16 @@ import { tap } from 'rxjs/operators';
 
 export async function bootstrap(app: INestApplication) {
   const logger = app.get<Logger>(WINSTON_MODULE_PROVIDER);
-  const sessionMiddleware = new SessionsMiddleware(
-    app.get('SESSION_OPTIONS'),
-    logger,
-  );
-  const userMiddleware = new UserMiddleware(
-    app.get<UsersService>(UsersService),
-    logger,
-  );
+  const sessionMiddleware = app.get(SessionsMiddleware);
+  //  new SessionsMiddleware(
+  //   app.get('SESSION_OPTIONS'),
+  //   logger,
+  // );
+  const userMiddleware = app.get(UserMiddleware);
+  //  new UserMiddleware(
+  //   app.get<UsersService>(UsersService),
+  //   logger,
+  // );
   const middlewares = [];
 
   app.useGlobalPipes(
