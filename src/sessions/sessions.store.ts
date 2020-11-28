@@ -40,7 +40,7 @@ export class SessionsStore extends Store {
 
     return this.sessionsService
       .findOne(sid)
-      .then(v => JSON.parse(v.data))
+      .then(v => v && JSON.parse(v.data))
       .then(v => {
         callback(null, v);
         this.logger.verbose(`Get the session successfully`);
