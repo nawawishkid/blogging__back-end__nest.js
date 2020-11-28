@@ -1,3 +1,4 @@
+import { ServeStaticModule } from '@nestjs/serve-static';
 import * as chalk from 'chalk';
 import * as winston from 'winston';
 import { WinstonModule } from 'nest-winston';
@@ -13,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { FilesModule } from './files/files.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
+import { resolve } from 'path';
 
 const envFilePath = ['.env'];
 const transports: winston.transport[] = [
@@ -102,6 +104,12 @@ if (process.env.NODE_ENV === 'production') {
         autoLoadEntities: true,
         synchronize: process.env.NODE_ENV !== 'production',
       }),
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: resolve('public'),
+      serveStaticOptions: {
+        fallthrough: true,
+      },
     }),
     UsersModule,
     SessionsModule,

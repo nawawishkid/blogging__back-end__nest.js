@@ -6,6 +6,7 @@ import {
   ExceptionFilter,
   HttpException,
   Inject,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -42,6 +43,16 @@ export class AppExceptionFilter implements ExceptionFilter {
     if (e instanceof HttpException) {
       status = e.getStatus();
       json = e.getResponse();
+    } else if (e instanceof Error) {
+      if ((e as any).code === `ENOENT`) {
+        const error = new NotFoundException();
+
+        status = error.getStatus();
+        json = error.getResponse();
+      } else {
+        status = 500;
+        json = { ...e, name: e.name, message: e.message, stack: e.stack };
+      }
     } else {
       status = 500;
       json = e;
