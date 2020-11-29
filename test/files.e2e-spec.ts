@@ -9,6 +9,7 @@ import { bootstrap } from '../src/bootstrap';
 import * as supertest from 'supertest';
 import { resolve } from 'path';
 import { getConnection } from 'typeorm';
+import { File } from 'src/files/entities/file.entity';
 
 const TABLE_PREFIX = 'e2efiles_';
 
@@ -49,6 +50,8 @@ describe(`Files module e2e tests`, () => {
         }),
       })
       .compile();
+
+    await getConnection().query(`DELETE FROM ${TABLE_PREFIX}file`);
 
     authGuard = module.get<AuthGuard>(AuthGuard);
 
@@ -91,28 +94,93 @@ describe(`Files module e2e tests`, () => {
     });
 
     describe(`GET`, () => {
-      it(`should 200:{files:File[]}`, () => {
-        return;
+      const filePath = resolve('test/fixtures/ben-awad-twitter-screenshot.png');
+
+      it(`should 200:{files:File[]}`, async () => {
+        await sendCreateFileRequest(agent, filePath);
+        await sendCreateFileRequest(agent, filePath);
+
+        return agent
+          .get(`/files`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.files).toEqual(
+              expect.arrayContaining([
+                expect.objectContaining({
+                  id: expect.any(Number),
+                  type: expect.any(String),
+                  size: expect.any(Number),
+                  path: expect.any(String),
+                }),
+              ]),
+            );
+            expect(res.body.files.length).toEqual(2);
+          });
+      });
+
+      it(`should 404`, () => {
+        return agent.get(`/files`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.get(`/files`).expect(403);
       });
     });
   });
 
   describe(`/files/:fileId`, () => {
-    describe(`GET`, () => {
-      it(`should 200:{file:File}`, () => {
-        return;
-      });
+    let createdFile: File;
+    const filePath = resolve('test/fixtures/ben-awad-twitter-screenshot.png');
+
+    beforeEach(async () => {
+      createdFile = await sendCreateFileRequest(agent, filePath).then(
+        res => res.body.createdFile,
+      );
     });
 
-    describe(`PUT`, () => {
-      it(`should 200:{updatedFile:File}`, () => {
-        return;
+    describe(`GET`, () => {
+      it(`should 200:{file:File}`, () => {
+        return agent
+          .get(`/files/${createdFile.id}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.file).toEqual(
+              expect.objectContaining({
+                id: expect.any(Number),
+                type: expect.any(String),
+                size: expect.any(Number),
+                path: expect.any(String),
+              }),
+            );
+          });
+      });
+
+      it(`should 404`, () => {
+        return agent.get(`/files/123`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.get(`/files/${createdFile.id}`).expect(403);
       });
     });
 
     describe(`DELETE`, () => {
       it(`should 204`, () => {
-        return;
+        return agent.delete(`/files/${createdFile.id}`).expect(204);
+      });
+
+      it(`should 404`, () => {
+        return agent.delete(`/files/23`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.delete(`/files/${createdFile.id}`).expect(403);
       });
     });
   });
