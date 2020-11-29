@@ -1,12 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import {
-  getConnectionToken,
-  getRepositoryToken,
-  TypeOrmModule,
-  TypeOrmModuleOptions,
-  TypeOrmOptionsFactory,
-} from '@nestjs/typeorm';
+import { getRepositoryToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { TYPEORM_MODULE_OPTIONS } from '@nestjs/typeorm/dist/typeorm.constants';
 import { AppModule } from '../src/app.module';
 import { AuthGuard } from '../src/auth.guard';

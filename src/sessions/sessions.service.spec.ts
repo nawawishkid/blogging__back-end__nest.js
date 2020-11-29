@@ -115,7 +115,7 @@ describe('SessionsService', () => {
       const expressSession = ({
         cookie: { expires: new Date() },
       } as unknown) as ExpressSessionDataDto;
-      const sid: string = '1';
+      const sid = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),
       } as Session;
@@ -135,7 +135,7 @@ describe('SessionsService', () => {
       const expressSession = ({
         cookie: { expires: new Date() },
       } as unknown) as ExpressSessionDataDto;
-      const sid: string = '1';
+      const sid = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),
       } as Session;

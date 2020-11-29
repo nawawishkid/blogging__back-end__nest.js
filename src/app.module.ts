@@ -18,7 +18,7 @@ const envFilePath = ['.env'];
 const transports: winston.transport[] = [
   new winston.transports.Console({
     format: winston.format.combine(
-      winston.format((info, opts) => {
+      winston.format(info => {
         info.namespace = chalk.yellow(info.namespace);
         info.requestId = chalk.green(info.requestId);
         info.timestamp = chalk.magenta(info.timestamp);

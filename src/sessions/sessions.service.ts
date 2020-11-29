@@ -112,7 +112,7 @@ export class SessionsService {
     this.logger.verbose(`Creating session entity from updateSessionDto...`);
     const { data, isRevoked, userId } = updateSessionDto;
 
-    for (let key in data) {
+    for (const key in data) {
       session[key] = data[key];
     }
 

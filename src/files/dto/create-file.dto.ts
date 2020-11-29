@@ -26,7 +26,7 @@ export class MulterFile {
   @IsUrl()
   path: string;
 
-  @Type(type => Buffer)
+  @Type(() => Buffer)
   buffer: Buffer;
 }
 export class CreateFileDto {

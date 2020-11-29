@@ -6,12 +6,12 @@ import { SessionsService } from './sessions.service';
 import { SessionsStore } from './sessions.store';
 
 describe(`SessionStore`, () => {
-  let sessionStore: SessionsStore,
-    sessionsService: SessionsService = ({
-      findOne: jest.fn(),
-      remove: jest.fn(),
-      update: jest.fn(),
-    } as unknown) as SessionsService;
+  let sessionStore: SessionsStore;
+  const sessionsService: SessionsService = ({
+    findOne: jest.fn(),
+    remove: jest.fn(),
+    update: jest.fn(),
+  } as unknown) as SessionsService;
 
   beforeEach(() => {
     jest.restoreAllMocks();
@@ -62,7 +62,7 @@ describe(`SessionStore`, () => {
         return Promise.resolve({} as Session);
       });
 
-    await sessionStore.set(sid, sessionData, () => {});
+    await sessionStore.set(sid, sessionData, null);
 
     expect(db[sid].userId).toEqual(sessionData.user.id);
   });
@@ -78,7 +78,7 @@ describe(`SessionStore`, () => {
       return Promise.resolve({} as Session);
     });
 
-    await sessionStore.set(sid, sessionData, () => {});
+    await sessionStore.set(sid, sessionData, null);
 
     expect(db[sid].userId).toBeUndefined();
   });

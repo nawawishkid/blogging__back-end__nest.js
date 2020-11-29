@@ -14,7 +14,7 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { CreateFileDto, MulterFile } from './dto/create-file.dto';
+import { MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
