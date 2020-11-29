@@ -1,24 +1,16 @@
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SessionsMiddleware } from './sessions/sessions.middleware';
 import { UserMiddleware } from './users/user.middleware';
-import { UsersService } from './users/users.service';
 import { AppExceptionFilter } from './exception.filter';
 import { tap } from 'rxjs/operators';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
-export async function bootstrap(app: INestApplication) {
+export async function bootstrap(app: NestExpressApplication) {
   const logger = app.get<Logger>(WINSTON_MODULE_PROVIDER);
   const sessionMiddleware = app.get(SessionsMiddleware);
-  //  new SessionsMiddleware(
-  //   app.get('SESSION_OPTIONS'),
-  //   logger,
-  // );
   const userMiddleware = app.get(UserMiddleware);
-  //  new UserMiddleware(
-  //   app.get<UsersService>(UsersService),
-  //   logger,
-  // );
   const middlewares = [];
 
   app.useGlobalPipes(
@@ -70,6 +62,7 @@ export async function bootstrap(app: INestApplication) {
   );
 
   app.use(...middlewares);
+  app.useStaticAssets('public');
 
   return app;
 }
