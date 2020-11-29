@@ -53,6 +53,7 @@ describe(`SessionStore`, () => {
     const sessionData = ({
       user: { id: 1000 },
     } as unknown) as ExpressSessionDataDto;
+    const callback = jest.fn();
 
     jest
       .spyOn(sessionsService, 'update')
@@ -62,15 +63,17 @@ describe(`SessionStore`, () => {
         return Promise.resolve({} as Session);
       });
 
-    await sessionStore.set(sid, sessionData, null);
+    await sessionStore.set(sid, sessionData, callback);
 
     expect(db[sid].userId).toEqual(sessionData.user.id);
+    expect(callback).toBeCalled();
   });
 
   it(`set(sid, session, callback) should not set userId on session entity object`, async () => {
     const db = {};
     const sid = '1';
     const sessionData: ExpressSessionDataDto = {} as ExpressSessionDataDto;
+    const callback = jest.fn();
 
     jest.spyOn(sessionsService, 'update').mockImplementation((sid, sess) => {
       db[sid] = sess;
@@ -78,9 +81,10 @@ describe(`SessionStore`, () => {
       return Promise.resolve({} as Session);
     });
 
-    await sessionStore.set(sid, sessionData, null);
+    await sessionStore.set(sid, sessionData, callback);
 
     expect(db[sid].userId).toBeUndefined();
+    expect(callback).toBeCalled();
   });
 
   it(`set(sid, session, callback) should call the callback with error`, async () => {
