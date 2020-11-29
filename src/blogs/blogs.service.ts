@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository } from 'typeorm';
+import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entities/blog.entity';
@@ -36,14 +36,14 @@ export class BlogsService {
     id: string,
     updateBlogDto: UpdateBlogDto,
   ): Promise<Blog> | undefined {
-    const updatedBlog: Blog = await this.blogsRepository.save({
+    const updateResult: UpdateResult = await this.blogsRepository.update(
       id,
-      ...updateBlogDto,
-    });
+      updateBlogDto,
+    );
 
-    if (!updatedBlog) return undefined;
+    if (updateResult.affected === 0) throw new BlogNotFoundException();
 
-    return updatedBlog;
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<string> {

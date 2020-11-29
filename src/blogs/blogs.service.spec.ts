@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DeleteResult, Repository } from 'typeorm';
+import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
@@ -23,6 +23,7 @@ describe('BlogsService', () => {
             save: jest.fn(),
             findOne: jest.fn(),
             delete: jest.fn(),
+            update: jest.fn(),
           },
         },
       ],
@@ -104,17 +105,20 @@ describe('BlogsService', () => {
       const updateBlogDto = {} as UpdateBlogDto;
       const updatedBlog = {} as Blog;
 
-      jest.spyOn(blogsRepository, 'save').mockResolvedValue(updatedBlog);
+      jest
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
+      jest.spyOn(blogsRepository, 'findOne').mockResolvedValue(updatedBlog);
 
-      return expect(service.update('blog-id', updateBlogDto)).resolves.toBe(
-        updatedBlog,
-      );
+      return expect(
+        service.update('blog-id', updateBlogDto),
+      ).resolves.toStrictEqual(updatedBlog);
     });
 
     it(`should throw the BlogNotFoundException if given blog id could not be found (no upsert)`, () => {
       jest
-        .spyOn(blogsRepository, 'save')
-        .mockRejectedValue(new BlogNotFoundException());
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 0 } as UpdateResult);
 
       return expect(
         service.update('blog-not-found', {} as UpdateBlogDto),
