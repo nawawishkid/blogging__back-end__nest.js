@@ -5,9 +5,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { BlogCustomField } from './blog-custom-field.entity';
 
 @Entity()
 export class Blog {
@@ -39,6 +41,12 @@ export class Blog {
 
   @Column({ nullable: true })
   metadata: string;
+
+  @OneToMany(
+    () => BlogCustomField,
+    bcf => bcf.blog,
+  )
+  blogCustomFields: BlogCustomField[];
 
   @CreateDateColumn({ type: 'datetime' })
   createdAt: string;

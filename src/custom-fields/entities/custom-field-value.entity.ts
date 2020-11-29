@@ -1,8 +1,10 @@
+import { BlogCustomField } from 'src/blogs/entities/blog-custom-field.entity';
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CustomField } from './custom-field.entity';
@@ -27,4 +29,10 @@ export class CustomFieldValue {
 
   @Column('text', { nullable: true })
   description?: string;
+
+  @OneToMany(
+    () => BlogCustomField,
+    bcf => bcf.customFieldValue,
+  )
+  blogCustomFields: BlogCustomField[];
 }

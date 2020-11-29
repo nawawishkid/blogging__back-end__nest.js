@@ -1,3 +1,4 @@
+import { BlogCustomField } from 'src/blogs/entities/blog-custom-field.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { CustomFieldValue } from './custom-field-value.entity';
 
@@ -17,4 +18,10 @@ export class CustomField {
     customFieldValue => customFieldValue.customField,
   )
   values: CustomFieldValue[];
+
+  @OneToMany(
+    () => BlogCustomField,
+    bcf => bcf.customField,
+  )
+  blogCustomFields: BlogCustomField[];
 }
