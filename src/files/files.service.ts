@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository, UpdateResult } from 'typeorm';
-import { MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
@@ -14,7 +13,7 @@ export class FilesService {
     private readonly configService: ConfigService,
   ) {}
 
-  async create(file: MulterFile): Promise<File> {
+  async create(file: Express.Multer.File): Promise<File> {
     const appUrl = this.configService.get<string>('url');
 
     const fileEntity = {

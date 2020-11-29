@@ -1,9 +1,5 @@
-import {
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreateFileDto, MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesController } from './files.controller';
@@ -77,7 +73,7 @@ describe('FilesController', () => {
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
     it(`should return the created file`, () => {
-      const file: MulterFile = {} as MulterFile;
+      const file: Express.Multer.File = {} as Express.Multer.File;
       const createdFile: File = {} as File;
 
       jest.spyOn(filesService, 'create').mockResolvedValue(createdFile as any);

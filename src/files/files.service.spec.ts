@@ -1,8 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
-import { CreateFileDto, MulterFile } from './dto/create-file.dto';
+import { Repository } from 'typeorm';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
@@ -77,10 +76,10 @@ describe('FilesService', () => {
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
     it(`should return the created file`, async () => {
-      const file: MulterFile = ({
+      const file: Express.Multer.File = ({
         mimetype: 'image/png',
         filename: 'lorem.png',
-      } as unknown) as MulterFile;
+      } as unknown) as Express.Multer.File;
       let receivedEntity: any;
       const createdFile: File = {} as File;
 

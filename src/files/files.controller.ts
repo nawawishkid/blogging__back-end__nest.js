@@ -13,7 +13,6 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
@@ -24,6 +23,7 @@ import {
   UpdateFileResponseDto,
 } from './dto/response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { nameUploadedFile } from './files.utils';
 
 @Controller('files')
 export class FilesController {
@@ -33,26 +33,13 @@ export class FilesController {
     FileInterceptor(`file`, {
       storage: diskStorage({
         destination: 'public',
-        filename(_, file, cb) {
-          const splittedFilename = file.originalname.split('.');
-          const ext = splittedFilename[splittedFilename.length - 1];
-          const name =
-            splittedFilename.length > 2
-              ? splittedFilename.slice(0, -1).join('.')
-              : splittedFilename[0];
-          const [month, day, year] = new Date()
-            .toLocaleDateString('en-US')
-            .split('/');
-          const date = [year, month, day].join('-');
-
-          cb(null, `${date}-${name}-${Date.now()}.${ext}`);
-        },
+        filename: nameUploadedFile,
       }),
     }),
   )
   @Post()
   async create(
-    @UploadedFile() file: MulterFile,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<CreateFileResponseDto> {
     const createdFile: File = await this.filesService.create(file);
 
