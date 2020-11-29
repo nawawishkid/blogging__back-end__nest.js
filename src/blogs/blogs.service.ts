@@ -49,7 +49,7 @@ export class BlogsService {
   async remove(id: string): Promise<string> {
     const deleteResult: DeleteResult = await this.blogsRepository.delete(id);
 
-    if (deleteResult.affected === null) throw new BlogNotFoundException();
+    if (deleteResult.affected === 0) throw new BlogNotFoundException();
 
     return id;
   }

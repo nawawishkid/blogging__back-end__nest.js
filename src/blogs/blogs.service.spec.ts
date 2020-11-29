@@ -132,7 +132,7 @@ describe('BlogsService', () => {
 
       jest
         .spyOn(blogsRepository, 'delete')
-        .mockResolvedValue({ affected: 0 } as DeleteResult);
+        .mockResolvedValue({ affected: 1 } as DeleteResult);
 
       return expect(service.remove(blogId)).resolves.toBe(blogId);
     });
@@ -140,7 +140,7 @@ describe('BlogsService', () => {
     it(`should throw BlogNotFoundException if given blog id could not be found`, () => {
       jest
         .spyOn(blogsRepository, 'delete')
-        .mockResolvedValue({ affected: null } as DeleteResult);
+        .mockResolvedValue({ affected: 0 } as DeleteResult);
 
       return expect(service.remove('hahaha')).rejects.toThrow(
         BlogNotFoundException,

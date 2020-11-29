@@ -4,7 +4,7 @@ import { User } from 'src/users/entities/user.entity';
 import { BlogsController } from './blogs.controller';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
+import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 
@@ -90,14 +90,14 @@ describe('BlogsController', () => {
     });
   });
 
-  describe(`update(blogId: string, updateBlogDto: UpdateBlogDto)`, () => {
+  describe(`update(blogId: string, updateBlogDto: UpdateBlogRequestBodyDto)`, () => {
     it(`should return updated blog`, () => {
       const updatedBlog = {} as Blog;
 
       jest.spyOn(blogsService, 'update').mockResolvedValue(updatedBlog);
 
       return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
+        controller.update('blog-id', {} as UpdateBlogRequestBodyDto),
       ).resolves.toEqual({ updatedBlog });
     });
 
@@ -107,7 +107,7 @@ describe('BlogsController', () => {
         .mockRejectedValue(new BlogNotFoundException());
 
       return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
+        controller.update('blog-id', {} as UpdateBlogRequestBodyDto),
       ).rejects.toThrow(NotFoundException);
     });
   });

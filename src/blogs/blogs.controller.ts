@@ -15,6 +15,7 @@ import { User as UserEntity } from '../users/entities/user.entity';
 import { User } from '../users/user.decorator';
 import { BlogsService } from './blogs.service';
 import { CreateBlogRequestBodyDto } from './dto/create-blog-request-body.dto';
+import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import {
   CreateBlogResponseDto,
@@ -22,15 +23,14 @@ import {
   FindOneBlogResponseDto,
   UpdateBlogResponseDto,
 } from './dto/response.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 
+@UseGuards(AuthGuard)
 @Controller('blogs')
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
 
-  @UseGuards(AuthGuard)
   @Post()
   async create(
     @User() user: UserEntity,
@@ -46,7 +46,6 @@ export class BlogsController {
     return { createdBlog };
   }
 
-  @UseGuards(AuthGuard)
   @Get()
   async findAll(@User() user: UserEntity): Promise<FindAllBlogsResponseDto> {
     const foundBlogs: Blog[] = await this.blogsService.findByAuthorId(user.id);
@@ -56,7 +55,6 @@ export class BlogsController {
     return { blogs: foundBlogs };
   }
 
-  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<FindOneBlogResponseDto> {
     const foundBlog: Blog = await this.blogsService.findOne(id);
@@ -66,11 +64,10 @@ export class BlogsController {
     return { blog: foundBlog };
   }
 
-  @UseGuards(AuthGuard)
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateBlogDto: UpdateBlogDto,
+    @Body() updateBlogDto: UpdateBlogRequestBodyDto,
   ): Promise<UpdateBlogResponseDto> {
     try {
       const updatedBlog: Blog = await this.blogsService.update(
@@ -86,7 +83,6 @@ export class BlogsController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
