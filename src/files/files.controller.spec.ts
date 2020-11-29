@@ -3,7 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreateFileDto } from './dto/create-file.dto';
+import { CreateFileDto, MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesController } from './files.controller';
@@ -77,11 +77,12 @@ describe('FilesController', () => {
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
     it(`should return the created file`, () => {
+      const file: MulterFile = {} as MulterFile;
       const createdFile: File = {} as File;
 
       jest.spyOn(filesService, 'create').mockResolvedValue(createdFile as any);
 
-      return expect(controller.create({} as CreateFileDto)).resolves.toEqual({
+      return expect(controller.create(file)).resolves.toEqual({
         createdFile,
       });
     });
@@ -108,12 +109,14 @@ describe('FilesController', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
-      jest.spyOn(filesService, 'update').mockRejectedValue(new Error());
+    it(`should throw what is thrown by filesService`, () => {
+      const error = new Error();
+
+      jest.spyOn(filesService, 'update').mockRejectedValue(error);
 
       return expect(
         controller.update('1', {} as UpdateFileDto),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow(error);
     });
   });
 
@@ -134,12 +137,12 @@ describe('FilesController', () => {
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
     });
 
-    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
-      jest.spyOn(filesService, 'remove').mockRejectedValue(new Error());
+    it(`should throw what is thrown by filesService`, () => {
+      const error = new Error();
 
-      return expect(controller.remove('1')).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      jest.spyOn(filesService, 'remove').mockRejectedValue(error);
+
+      return expect(controller.remove('1')).rejects.toThrow(error);
     });
   });
 });

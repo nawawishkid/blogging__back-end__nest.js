@@ -17,11 +17,11 @@ export class FilesService {
   async create(file: MulterFile): Promise<File> {
     const appUrl = this.configService.get<string>('url');
 
-    const fileEntity: File = this.filesRepository.create({
+    const fileEntity = {
       ...file,
       type: file.mimetype,
       path: appUrl + file.filename,
-    });
+    };
 
     return this.filesRepository.save(fileEntity);
   }

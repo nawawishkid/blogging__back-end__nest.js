@@ -1,7 +1,8 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CreateFileDto } from './dto/create-file.dto';
+import { DeepPartial, Repository } from 'typeorm';
+import { CreateFileDto, MulterFile } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
@@ -9,6 +10,7 @@ import { FilesService } from './files.service';
 
 describe('FilesService', () => {
   let service: FilesService, filesRepository: Repository<File>;
+  const appUrl = `http://localhost:3000`;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -25,6 +27,10 @@ describe('FilesService', () => {
             delete: jest.fn(),
             update: jest.fn(),
           },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(appUrl) },
         },
       ],
     }).compile();
@@ -70,21 +76,26 @@ describe('FilesService', () => {
   });
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
-    it(`should return the created file`, () => {
-      const createFileDto: CreateFileDto = {
-        name: 'hello',
-        file: { path: 'http://abc.com', size: 10032309, type: 'image/png' },
-      };
-      const createdFile: File = {
-        id: 1,
-        name: createFileDto.name,
-        ...createFileDto.file,
-      };
+    it(`should return the created file`, async () => {
+      const file: MulterFile = ({
+        mimetype: 'image/png',
+        filename: 'lorem.png',
+      } as unknown) as MulterFile;
+      let receivedEntity: any;
+      const createdFile: File = {} as File;
 
-      jest.spyOn(filesRepository, 'save').mockResolvedValue(createdFile);
+      jest.spyOn(filesRepository, 'save').mockImplementation(f => {
+        receivedEntity = f;
 
-      return expect(service.create(createFileDto)).resolves.toEqual(
-        createdFile,
+        return Promise.resolve(createdFile);
+      });
+
+      expect(await service.create(file)).toEqual(createdFile);
+      expect(receivedEntity).toEqual(
+        expect.objectContaining({
+          type: file.mimetype,
+          path: appUrl + file.filename,
+        }),
       );
     });
   });

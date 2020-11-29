@@ -9,7 +9,6 @@ import {
   Delete,
   HttpCode,
   NotFoundException,
-  InternalServerErrorException,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -55,7 +54,6 @@ export class FilesController {
   async create(
     @UploadedFile() file: MulterFile,
   ): Promise<CreateFileResponseDto> {
-    console.log(`file: `, file);
     const createdFile: File = await this.filesService.create(file);
 
     return { createdFile };
@@ -94,7 +92,7 @@ export class FilesController {
     } catch (e) {
       if (e instanceof FileNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 
@@ -106,7 +104,7 @@ export class FilesController {
     } catch (e) {
       if (e instanceof FileNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 }
