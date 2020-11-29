@@ -14,6 +14,8 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { CreateBlogResponseDto } from 'src/blogs/dto/response.dto';
+import { UpdateBlogDto } from 'src/blogs/dto/update-blog.dto';
 
 const TABLE_PREFIX = 'e2eblog_';
 
@@ -28,11 +30,13 @@ describe(`Blogs controller`, () => {
   let app: NestExpressApplication,
     agent: supertest.SuperAgentTest,
     ur: Repository<User>,
-    br: Repository<Blog>,
     user: User,
-    logger: Logger;
+    logger: Logger,
+    authGuard: AuthGuard;
 
   beforeEach(async () => {
+    jest.restoreAllMocks();
+
     const module = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -59,18 +63,21 @@ describe(`Blogs controller`, () => {
           autoLoadEntities: true,
           synchronize: true,
           entityPrefix: TABLE_PREFIX,
+          keepConnectionAlive: true,
         }),
       })
       .compile();
 
     // const torm = module.get<TypeOrmModuleOptions>(TYPEORM_MODULE_OPTIONS)
+    authGuard = module.get<AuthGuard>(AuthGuard);
     logger = module.get<Logger>(WINSTON_MODULE_PROVIDER);
     logger.silent = true;
     ur = module.get<Repository<User>>(getRepositoryToken(User));
-    br = module.get<Repository<Blog>>(getRepositoryToken(Blog));
 
-    await br.query(`DELETE FROM ${br.metadata.tableName}`);
-    await ur.query(`DELETE FROM ${ur.metadata.tableName}`);
+    const conn = getConnection();
+
+    await conn.query(`DELETE FROM ${TABLE_PREFIX}blog`);
+    await conn.query(`DELETE FROM ${TABLE_PREFIX}user`);
 
     user = await ur.save({
       email: `email@gmail.com`,
@@ -85,14 +92,9 @@ describe(`Blogs controller`, () => {
     agent = supertest.agent(app.getHttpServer());
   });
 
-  afterEach(async () => {
-    const conn = getConnection();
+  afterEach(() => app.close());
 
-    await conn.query(
-      `DROP TABLE ${TABLE_PREFIX}blog, ${TABLE_PREFIX}session, ${TABLE_PREFIX}user`,
-    );
-    await app.close();
-  });
+  afterAll(() => getConnection().close());
 
   describe(`/blogs`, () => {
     describe(`POST`, () => {
@@ -121,8 +123,139 @@ describe(`Blogs controller`, () => {
           });
       });
 
-      it(`should...`, () => {
-        return sendCreateBlogRequest(agent, createBlogDto).expect(201);
+      it(`should 400`, () => {
+        createBlogDto.title = null;
+
+        return sendCreateBlogRequest(agent, createBlogDto).expect(400);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return sendCreateBlogRequest(agent, createBlogDto).expect(403);
+      });
+    });
+
+    describe(`GET`, () => {
+      it(`should 200:{blogs:Blog[]}`, async () => {
+        const createBlogDto: CreateBlogRequestBodyDto = {
+          title: `Hello world!`,
+        };
+        const {
+          createdBlog,
+        }: CreateBlogResponseDto = await sendCreateBlogRequest(
+          agent,
+          createBlogDto,
+        ).then(res => res.body);
+
+        return agent
+          .get(`/blogs`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.blogs).toEqual(
+              expect.arrayContaining([
+                expect.objectContaining({
+                  id: createdBlog.id,
+                  coverImage: null,
+                  body: null,
+                  excerpt: null,
+                  createdAt: createdBlog.createdAt,
+                  updatedAt: createdBlog.updatedAt,
+                  metadata: null,
+                  ...createBlogDto,
+                }),
+              ]),
+            );
+          });
+      });
+
+      it(`should 404`, () => {
+        return agent.get(`/blogs`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.get(`/blogs`).expect(403);
+      });
+    });
+  });
+
+  describe(`/blogs/:blodId`, () => {
+    let createdBlog: Blog;
+
+    beforeEach(async () => {
+      createdBlog = await sendCreateBlogRequest(agent, {
+        title: 'Hello world',
+      }).then(res => res.body.createdBlog);
+    });
+
+    describe(`PUT`, () => {
+      let updateBlogDto: UpdateBlogDto;
+
+      beforeEach(() => {
+        updateBlogDto = { title: 'updated title ' };
+      });
+
+      it(`should 200:{updatedBlog:Blog}`, () => {
+        return agent
+          .put(`/blogs/${createdBlog.id}`)
+          .send(updateBlogDto)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.updatedBlog).toEqual(
+              expect.objectContaining({
+                id: createdBlog.id,
+                coverImage: null,
+                body: null,
+                excerpt: null,
+                updatedAt: expect.any(String),
+                metadata: null,
+                ...updateBlogDto,
+              }),
+            );
+          });
+      });
+
+      it(`should 404`, () => {
+        return agent
+          .put(`/blogs/lorem`)
+          .send(updateBlogDto)
+          .expect(404);
+      });
+
+      it(`should 400`, () => {
+        (updateBlogDto as any).lorem = 'hahah';
+
+        return agent
+          .put(`/blogs/${createdBlog.id}`)
+          .send(updateBlogDto)
+          .expect(400);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent
+          .put(`/blogs/${createdBlog.id}`)
+          .send(updateBlogDto)
+          .expect(403);
+      });
+    });
+
+    describe(`DELETE`, () => {
+      it(`should 204`, () => {
+        return agent.delete(`/blogs/${createdBlog.id}`).expect(204);
+      });
+
+      it(`should 404`, () => {
+        return agent.delete(`/blogs/hello`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.delete(`/blogs/${createdBlog.id}`).expect(403);
       });
     });
   });
