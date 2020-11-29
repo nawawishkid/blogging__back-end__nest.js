@@ -2,7 +2,6 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesService } from './files.service';
@@ -95,31 +94,6 @@ describe('FilesService', () => {
           type: file.mimetype,
           path: appUrl + file.filename,
         }),
-      );
-    });
-  });
-
-  describe(`update(fileId: number, updateFileDto: UpdateFileDto)`, () => {
-    it(`should return the updated file`, () => {
-      const updatedFile: File = {} as File;
-
-      jest
-        .spyOn(filesRepository, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
-      jest.spyOn(filesRepository, 'findOne').mockResolvedValue(updatedFile);
-
-      return expect(service.update(1, {} as UpdateFileDto)).resolves.toEqual(
-        updatedFile,
-      );
-    });
-
-    it(`should throw the FileNotFoundException if a file with the given file id could not be found (no upsert)`, () => {
-      jest
-        .spyOn(filesRepository, 'update')
-        .mockResolvedValue({ affected: 0 } as any);
-
-      return expect(service.update(1, {} as UpdateFileDto)).rejects.toThrow(
-        FileNotFoundException,
       );
     });
   });

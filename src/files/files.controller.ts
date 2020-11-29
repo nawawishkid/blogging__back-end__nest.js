@@ -14,7 +14,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import {
@@ -65,25 +64,6 @@ export class FilesController {
     if (!file) throw new NotFoundException();
 
     return { file };
-  }
-
-  @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateFileDto: UpdateFileDto,
-  ): Promise<UpdateFileResponseDto> {
-    try {
-      const updatedFile: File = await this.filesService.update(
-        +id,
-        updateFileDto,
-      );
-
-      return { updatedFile };
-    } catch (e) {
-      if (e instanceof FileNotFoundException) throw new NotFoundException();
-
-      throw e;
-    }
   }
 
   @Delete(':id')

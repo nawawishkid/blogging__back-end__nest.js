@@ -1,6 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
@@ -81,38 +80,6 @@ describe('FilesController', () => {
       return expect(controller.create(file)).resolves.toEqual({
         createdFile,
       });
-    });
-  });
-
-  describe(`update(fileId: string, updateFileDto: UpdateFileDto)`, () => {
-    it(`should return the updated file`, () => {
-      const updatedFile: File = {} as File;
-
-      jest.spyOn(filesService, 'update').mockResolvedValue(updatedFile as any);
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).resolves.toEqual({ updatedFile });
-    });
-
-    it(`should throw the NotFoundException if a file with the given id could not be found to update (no upsert)`, () => {
-      jest
-        .spyOn(filesService, 'update')
-        .mockRejectedValue(new FileNotFoundException());
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it(`should throw what is thrown by filesService`, () => {
-      const error = new Error();
-
-      jest.spyOn(filesService, 'update').mockRejectedValue(error);
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).rejects.toThrow(error);
     });
   });
 
