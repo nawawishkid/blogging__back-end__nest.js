@@ -1,7 +1,6 @@
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import supertest, * as request from 'supertest';
-import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import { bootstrap } from '../src/bootstrap';
@@ -14,6 +13,7 @@ import { CreateSessionResponseDto } from 'src/sessions/dto/response.dto';
 import { UpdateSessionDto } from 'src/sessions/dto/update-session.dto';
 import { TYPEORM_MODULE_OPTIONS } from '@nestjs/typeorm/dist/typeorm.constants';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 const TABLE_PREFIX = 'e2esession_';
 const sendCreateSessionRequest = (
@@ -24,7 +24,7 @@ const sendCreateSessionRequest = (
     .send({ email: 'some@email.com', password: 'password' });
 
 describe(`Session controller`, () => {
-  let app: INestApplication,
+  let app: NestExpressApplication,
     agent: request.SuperAgentTest,
     authService: AuthService,
     ur: Repository<User>,

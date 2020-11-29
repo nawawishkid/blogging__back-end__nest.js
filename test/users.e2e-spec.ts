@@ -1,4 +1,3 @@
-import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import { bootstrap } from '../src/bootstrap';
@@ -11,6 +10,7 @@ import { User } from '../src/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UpdateUserDto } from '../src/users/dto/update-user.dto';
 import { AuthGuard } from '../src/auth.guard';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 function sendCreateUserRequest(
   agent: supertest.SuperAgentTest,
@@ -28,7 +28,7 @@ function sendUpdateUserRequest(
 }
 
 describe(`Users e2e`, () => {
-  let app: INestApplication,
+  let app: NestExpressApplication,
     agent: supertest.SuperAgentTest,
     logger: Logger,
     ur: Repository<User>,
