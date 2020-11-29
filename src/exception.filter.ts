@@ -25,12 +25,11 @@ export class AppExceptionFilter implements ExceptionFilter {
     const res = host.switchToHttp().getResponse<Response>();
     let status, json;
 
-    this.logger.error(`An unhandled error occurred:`, {
-      namespace,
-      json: e,
-    });
-
     if (res.headersSent) {
+      this.logger.error(`An unhandled error occurred:`, {
+        namespace,
+        json: e,
+      });
       this.logger.verbose(
         `Header has already been sent. Stop response process`,
         {
@@ -50,10 +49,20 @@ export class AppExceptionFilter implements ExceptionFilter {
         status = error.getStatus();
         json = error.getResponse();
       } else {
+        this.logger.error(`An unhandled error occurred:`, {
+          namespace,
+          json: e,
+        });
+
         status = 500;
         json = { ...e, name: e.name, message: e.message, stack: e.stack };
       }
     } else {
+      this.logger.error(`An unhandled error occurred:`, {
+        namespace,
+        json: e,
+      });
+
       status = 500;
       json = e;
     }
