@@ -190,6 +190,38 @@ describe(`Blogs controller`, () => {
       }).then(res => res.body.createdBlog);
     });
 
+    describe(`GET`, () => {
+      it(`should 200:{blog:Blog}`, () => {
+        return agent
+          .get(`/blogs/${createdBlog.id}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.blog).toEqual(
+              expect.objectContaining({
+                id: createdBlog.id,
+                coverImage: null,
+                body: null,
+                excerpt: null,
+                createdAt: createdBlog.createdAt,
+                updatedAt: createdBlog.updatedAt,
+                metadata: null,
+                ...createdBlog,
+              }),
+            );
+          });
+      });
+
+      it(`should 404`, () => {
+        return agent.get(`/blogs/lorem`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.get(`/blogs/${createdBlog.id}`).expect(403);
+      });
+    });
+
     describe(`PUT`, () => {
       let updateBlogDto: UpdateBlogDto;
 
