@@ -52,7 +52,7 @@ describe('FilesService', () => {
     });
 
     it(`should return undefined it there's no file found`, () => {
-      jest.spyOn(filesRepository, 'find').mockResolvedValue(undefined);
+      jest.spyOn(filesRepository, 'find').mockResolvedValue([]);
 
       return expect(service.findAll()).resolves.toBeUndefined();
     });

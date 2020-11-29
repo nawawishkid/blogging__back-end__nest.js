@@ -25,8 +25,12 @@ export class FilesService {
     return this.filesRepository.save(fileEntity);
   }
 
-  findAll(): Promise<File[]> {
-    return this.filesRepository.find();
+  async findAll(): Promise<File[] | undefined> {
+    const files: File[] = await this.filesRepository.find();
+
+    if (files.length === 0) return undefined;
+
+    return files;
   }
 
   findOne(id: number): Promise<File> {
