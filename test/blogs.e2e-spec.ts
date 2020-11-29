@@ -1,4 +1,3 @@
-import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { TYPEORM_MODULE_OPTIONS } from '@nestjs/typeorm/dist/typeorm.constants';
@@ -14,6 +13,7 @@ import { UserMiddleware } from '../src/users/user.middleware';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 const TABLE_PREFIX = 'e2eblog_';
 
@@ -25,7 +25,7 @@ function sendCreateBlogRequest(
 }
 
 describe(`Blogs controller`, () => {
-  let app: INestApplication,
+  let app: NestExpressApplication,
     agent: supertest.SuperAgentTest,
     ur: Repository<User>,
     br: Repository<Blog>,
@@ -77,7 +77,7 @@ describe(`Blogs controller`, () => {
       password: `password`,
       username: `username`,
     });
-    app = await module.createNestApplication();
+    app = await module.createNestApplication<NestExpressApplication>();
     app = await bootstrap(app);
 
     await app.init();
