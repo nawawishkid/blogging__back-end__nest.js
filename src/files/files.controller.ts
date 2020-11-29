@@ -11,6 +11,7 @@ import {
   NotFoundException,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { UpdateFileDto } from './dto/update-file.dto';
@@ -24,7 +25,9 @@ import {
 } from './dto/response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { nameUploadedFile } from './files.utils';
+import { AuthGuard } from '../auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
