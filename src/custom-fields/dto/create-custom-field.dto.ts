@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateCustomFieldDto {
   @IsString()
@@ -6,5 +6,9 @@ export class CreateCustomFieldDto {
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  values?: string[];
 }

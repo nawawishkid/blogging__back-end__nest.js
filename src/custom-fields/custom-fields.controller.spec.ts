@@ -3,7 +3,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CustomFieldValuesService } from './custom-field-values.service';
+import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldsController } from './custom-fields.controller';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
@@ -31,7 +31,12 @@ describe('CustomFieldsController', () => {
             remove: jest.fn(),
           },
         },
-        { provide: CustomFieldValuesService, useValue: {} },
+        {
+          provide: CustomFieldValuesService,
+          useValue: {
+            create: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -121,14 +126,6 @@ describe('CustomFieldsController', () => {
         controller.update('1', {} as UpdateCustomFieldDto),
       ).rejects.toThrow(NotFoundException);
     });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by customFieldsService`, () => {
-      jest.spyOn(customFieldsService, 'update').mockRejectedValue(new Error());
-
-      return expect(
-        controller.update('1', {} as UpdateCustomFieldDto),
-      ).rejects.toThrow(InternalServerErrorException);
-    });
   });
 
   describe(`remove(customFieldId: number)`, () => {
@@ -148,14 +145,6 @@ describe('CustomFieldsController', () => {
         .mockRejectedValue(new CustomFieldNotFoundException());
 
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
-    });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by customFieldsService`, () => {
-      jest.spyOn(customFieldsService, 'remove').mockRejectedValue(new Error());
-
-      return expect(controller.remove('1')).rejects.toThrow(
-        InternalServerErrorException,
-      );
     });
   });
 });

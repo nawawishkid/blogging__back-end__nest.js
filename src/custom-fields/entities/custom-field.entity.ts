@@ -1,6 +1,5 @@
-import { BlogCustomField } from 'src/blogs/entities/blog-custom-field.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { CustomFieldValue } from './custom-field-value.entity';
+import { CustomFieldValue } from '../../custom-field-values/entities/custom-field-value.entity';
 
 @Entity()
 export class CustomField {
@@ -16,12 +15,7 @@ export class CustomField {
   @OneToMany(
     () => CustomFieldValue,
     customFieldValue => customFieldValue.customField,
+    { cascade: true },
   )
   values: CustomFieldValue[];
-
-  @OneToMany(
-    () => BlogCustomField,
-    bcf => bcf.customField,
-  )
-  blogCustomFields: BlogCustomField[];
 }

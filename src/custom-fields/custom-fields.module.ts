@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { CustomFieldsService } from './custom-fields.service';
 import { CustomFieldsController } from './custom-fields.controller';
-import { CustomFieldValuesService } from './custom-field-values.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomField } from './entities/custom-field.entity';
-import { CustomFieldValue } from './entities/custom-field-value.entity';
+import { CustomFieldValuesModule } from 'src/custom-field-values/custom-field-values.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CustomField, CustomFieldValue])],
+  imports: [TypeOrmModule.forFeature([CustomField]), CustomFieldValuesModule],
   controllers: [CustomFieldsController],
-  providers: [CustomFieldsService, CustomFieldValuesService],
+  providers: [CustomFieldsService],
 })
 export class CustomFieldsModule {}
