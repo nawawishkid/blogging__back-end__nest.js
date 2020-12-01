@@ -62,7 +62,7 @@ describe('CustomFieldsController', () => {
     });
 
     it(`should throw the NotFoundException if there's no customField`, () => {
-      jest.spyOn(customFieldsService, 'findAll').mockResolvedValue(undefined);
+      jest.spyOn(customFieldsService, 'findAll').mockResolvedValue([]);
 
       return expect(controller.findAll()).rejects.toThrow(NotFoundException);
     });
