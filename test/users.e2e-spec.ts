@@ -5,12 +5,16 @@ import { CreateUserDto } from '../src/users/dto/create-user.dto';
 import * as supertest from 'supertest';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Repository } from 'typeorm';
+import { getConnection, Repository } from 'typeorm';
 import { User } from '../src/users/entities/user.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getRepositoryToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { UpdateUserDto } from '../src/users/dto/update-user.dto';
 import { AuthGuard } from '../src/auth.guard';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { TYPEORM_MODULE_OPTIONS } from '@nestjs/typeorm/dist/typeorm.constants';
+import { ConfigService } from '@nestjs/config';
+
+const TABLE_PREFIX = `e2eusers_`;
 
 function sendCreateUserRequest(
   agent: supertest.SuperAgentTest,
@@ -38,6 +42,22 @@ describe(`Users e2e`, () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     })
+      .overrideProvider(TYPEORM_MODULE_OPTIONS)
+      .useFactory({
+        inject: [ConfigService],
+        factory: (configService: ConfigService): TypeOrmModuleOptions => ({
+          type: 'mysql',
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          username: configService.get<string>('database.username'),
+          password: configService.get<string>('database.password'),
+          database: configService.get<string>('database.name'),
+          autoLoadEntities: true,
+          synchronize: true,
+          entityPrefix: TABLE_PREFIX,
+          keepConnectionAlive: true,
+        }),
+      })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) })
       .compile();
@@ -59,6 +79,8 @@ describe(`Users e2e`, () => {
   });
 
   afterEach(() => app.close());
+
+  afterAll(() => getConnection().close());
 
   describe(`/users`, () => {
     describe(`POST`, () => {
