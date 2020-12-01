@@ -26,6 +26,7 @@ import { CreateCustomFieldValueResponseDto } from '../custom-field-values/dto/re
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
 import { AuthGuard } from '../auth.guard';
+import { CreateCustomFieldValueRequestBodyDto } from './dto/create-custom-field-value-request-body.dto';
 
 @UseGuards(AuthGuard)
 @Controller('custom-fields')
@@ -105,11 +106,11 @@ export class CustomFieldsController {
   @Post(`:customFieldId/values`)
   async createCustomFieldValue(
     @Param(`customFieldId`) customFieldId: string,
-    @Body() createCustomFieldValueDto: CreateCustomFieldValueDto,
+    @Body() createCustomFieldValueDto: CreateCustomFieldValueRequestBodyDto,
   ): Promise<CreateCustomFieldValueResponseDto> {
     const createdCustomFieldValue: CustomFieldValue = await this.customFieldValuesService.create(
       {
-        customFieldId,
+        customFieldId: +customFieldId,
         ...createCustomFieldValueDto,
       },
     );
