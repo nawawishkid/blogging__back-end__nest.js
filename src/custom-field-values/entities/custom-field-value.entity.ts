@@ -20,9 +20,9 @@ export class CustomFieldValue {
   @ManyToOne(
     () => CustomField,
     customField => customField.values,
+    { onDelete: 'CASCADE' },
   )
-  @JoinColumn({ name: 'customFieldId' })
-  customField: CustomField;
+  customField?: CustomField;
 
   @Column()
   value: string;
@@ -34,5 +34,5 @@ export class CustomFieldValue {
     () => BlogCustomField,
     bcf => bcf.customFieldValue,
   )
-  blogCustomFields: BlogCustomField[];
+  blogCustomFields?: BlogCustomField[];
 }
