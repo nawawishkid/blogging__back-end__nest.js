@@ -38,7 +38,14 @@ describe(`Session controller`, () => {
       imports: [AppModule],
     })
       .overrideProvider(AuthService)
-      .useValue({ authenticate: () => null })
+      .useValue({
+        /**
+         * .mockResolvedValue(createdUser) returns undefined. I don't know why
+         */
+        authenticate: jest.fn().mockImplementation(() => {
+          return Promise.resolve(createdUser);
+        }),
+      })
       .overrideProvider(TYPEORM_MODULE_OPTIONS)
       .useFactory({
         inject: [ConfigService],
@@ -94,8 +101,6 @@ describe(`Session controller`, () => {
   describe('/sessions', () => {
     describe(`POST`, () => {
       it(`should 201:{createdSession: Session}`, () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         return agent
           .post('/sessions')
           .send({ email: createdUser.email, password: createdUser.password })
@@ -130,8 +135,6 @@ describe(`Session controller`, () => {
           app.getHttpServer(),
         );
 
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         await sendCreateSessionRequest(agent);
         await sendCreateSessionRequest(agent2);
 
@@ -162,8 +165,6 @@ describe(`Session controller`, () => {
   describe(`/sessions/:sessionId`, () => {
     describe(`GET`, () => {
       it(`should 200:{session:Session}`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         const {
           createdSession,
         }: CreateSessionResponseDto = await sendCreateSessionRequest(
@@ -192,8 +193,6 @@ describe(`Session controller`, () => {
       });
 
       it(`should 404`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         await sendCreateSessionRequest(agent);
 
         return agent.get('/sessions/abc').expect(404);
@@ -202,8 +201,6 @@ describe(`Session controller`, () => {
 
     describe(`PUT`, () => {
       it(`should 200:{updatedSession:Session}`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         const {
           createdSession,
         }: CreateSessionResponseDto = await sendCreateSessionRequest(
@@ -228,8 +225,6 @@ describe(`Session controller`, () => {
       });
 
       it(`should 400`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         const {
           createdSession,
         }: CreateSessionResponseDto = await sendCreateSessionRequest(
@@ -249,8 +244,6 @@ describe(`Session controller`, () => {
 
     describe(`DELETE`, () => {
       it(`should 204`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         const {
           createdSession,
         }: CreateSessionResponseDto = await sendCreateSessionRequest(
@@ -261,8 +254,6 @@ describe(`Session controller`, () => {
       });
 
       it(`should 404`, async () => {
-        jest.spyOn(authService, 'authenticate').mockResolvedValue(createdUser);
-
         await sendCreateSessionRequest(agent);
 
         return agent.delete(`/sessions/some-id`).expect(404);
