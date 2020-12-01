@@ -1,7 +1,4 @@
-import {
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldsController } from './custom-fields.controller';

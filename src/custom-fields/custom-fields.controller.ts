@@ -21,7 +21,6 @@ import {
   FindOneCustomFieldResponseDto,
   UpdateCustomFieldResponseDto,
 } from './dto/response.dto';
-import { CreateCustomFieldValueDto } from '../custom-field-values/dto/create-custom-field-value.dto';
 import { CreateCustomFieldValueResponseDto } from '../custom-field-values/dto/response.dto';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';

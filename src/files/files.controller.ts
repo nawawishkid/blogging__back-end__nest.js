@@ -3,8 +3,6 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Put,
   Param,
   Delete,
   HttpCode,
@@ -20,7 +18,6 @@ import {
   CreateFileResponseDto,
   FindAllFilesResponseDto,
   FindOneFileResponseDto,
-  UpdateFileResponseDto,
 } from './dto/response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { nameUploadedFile } from './files.utils';

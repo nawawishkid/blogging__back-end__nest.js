@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { ConfigService } from '@nestjs/config';

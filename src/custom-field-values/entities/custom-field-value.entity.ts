@@ -2,7 +2,6 @@ import { BlogCustomField } from '../../blogs/entities/blog-custom-field.entity';
 import {
   Column,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
