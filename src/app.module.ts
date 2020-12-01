@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { FilesModule } from './files/files.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
+import { CustomFieldValuesModule } from './custom-field-values/custom-field-values.module';
 
 const envFilePath = ['.env'];
 const transports: winston.transport[] = [
@@ -112,6 +113,7 @@ if (process.env.NODE_ENV === 'production') {
     BlogsModule,
     FilesModule,
     CustomFieldsModule,
+    CustomFieldValuesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
