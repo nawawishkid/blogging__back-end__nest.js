@@ -13,7 +13,6 @@ import { Connection, getConnection } from 'typeorm';
 import { CustomFieldValue } from 'src/custom-field-values/entities/custom-field-value.entity';
 import { CreateCustomFieldResponseDto } from 'src/custom-fields/dto/response.dto';
 import { UpdateCustomFieldDto } from 'src/custom-fields/dto/update-custom-field.dto';
-import { CreateCustomFieldValueDto } from 'src/custom-field-values/dto/create-custom-field-value.dto';
 import { CreateCustomFieldValueRequestBodyDto } from 'src/custom-fields/dto/create-custom-field-value-request-body.dto';
 
 const TABLE_PREFIX = `e2ecustom_fields_`;
