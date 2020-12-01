@@ -7,7 +7,9 @@ import {
   NotFoundException,
   Param,
   Put,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from 'src/auth.guard';
 import { CustomFieldValuesService } from './custom-field-values.service';
 import {
   FindAllCustomFieldValuesResponseDto,
@@ -18,6 +20,7 @@ import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
 
+@UseGuards(AuthGuard)
 @Controller('custom-field-values')
 export class CustomFieldValuesController {
   constructor(

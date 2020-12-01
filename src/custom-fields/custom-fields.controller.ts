@@ -8,6 +8,7 @@ import {
   Delete,
   NotFoundException,
   HttpCode,
+  UseGuards,
 } from '@nestjs/common';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
@@ -24,7 +25,9 @@ import { CreateCustomFieldValueDto } from '../custom-field-values/dto/create-cus
 import { CreateCustomFieldValueResponseDto } from '../custom-field-values/dto/response.dto';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
+import { AuthGuard } from 'src/auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('custom-fields')
 export class CustomFieldsController {
   constructor(
