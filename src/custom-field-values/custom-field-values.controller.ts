@@ -9,7 +9,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/auth.guard';
+import { AuthGuard } from '../auth.guard';
 import { CustomFieldValuesService } from './custom-field-values.service';
 import {
   FindAllCustomFieldValuesResponseDto,
