@@ -303,7 +303,7 @@ paths:
                 type: object
                 properties:
                   createdCustomField:
-                    $ref: '#/components/schemas/CustomField'
+                    $ref: '#/components/schemas/CreatedCustomField'
 
     get:
       tags:
@@ -381,23 +381,6 @@ paths:
         schema:
           type: string
 
-    get:
-      tags:
-        - Custom field value
-      summary: Get a custom field's values
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  customFieldValues:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CustomFieldValue'
-
     post:
       tags:
         - Custom field value
@@ -418,13 +401,8 @@ paths:
                   createdCustomFieldValue:
                     $ref: '#/components/schemas/CustomFieldValue'
 
-  /custom-fields/{customFieldId}/values/{customFieldValueId}:
+  /custom-field-values/{customFieldValueId}:
     parameters:
-      - name: customFieldId
-        in: path
-        required: true
-        schema:
-          type: string
       - name: customFieldValueId
         in: path
         required: true
@@ -443,7 +421,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  customField:
+                  customFieldValue:
                     $ref: '#/components/schemas/CustomFieldValue'
 
     put:
@@ -463,7 +441,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  updatedCustomField:
+                  updatedCustomFieldValue:
                     $ref: '#/components/schemas/CustomFieldValue'
 
     delete:
@@ -652,12 +630,20 @@ components:
         - $ref: '#/components/schemas/UpdateCustomFieldDTO'
       required:
         - name
-    CustomField:
+    CreatedCustomField:
       allOf:
         - $ref: '#/components/schemas/CreateCustomFieldDTO'
       properties:
         id:
           type: integer
+    CustomField:
+      allOf:
+        - $ref: '#/components/schemas/CreatedCustomField'
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomFieldValue'
     UpdateCustomFieldValueDTO:
       type: object
       properties:
@@ -668,9 +654,6 @@ components:
     CreateCustomFieldValueDTO:
       allOf:
         - $ref: '#/components/schemas/UpdateCustomFieldValueDTO'
-      properties:
-        customFieldId:
-          type: integer
       required:
         - customFieldId
         - value
@@ -680,6 +663,8 @@ components:
       properties:
         id:
           type: integer
+        customFieldId:
+          type: integer
     UpdateFileDTO:
       type: object
       properties:
@@ -688,6 +673,20 @@ components:
     CreateFileDTO:
       allOf:
         - $ref: '#/components/schemas/UpdateFileDTO'
+      properties:
+        file:
+          type: object
+          properties:
+            type:
+              type: string
+            size:
+              type: integer
+            path:
+              type: string
+          required:
+            - type
+            - size
+            - path
       required:
         - name
     File:
