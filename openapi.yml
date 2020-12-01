@@ -303,7 +303,7 @@ paths:
                 type: object
                 properties:
                   createdCustomField:
-                    $ref: '#/components/schemas/CreatedCustomField'
+                    $ref: '#/components/schemas/CustomField'
 
     get:
       tags:
@@ -630,16 +630,12 @@ components:
         - $ref: '#/components/schemas/UpdateCustomFieldDTO'
       required:
         - name
-    CreatedCustomField:
+    CustomField:
       allOf:
         - $ref: '#/components/schemas/CreateCustomFieldDTO'
       properties:
         id:
           type: integer
-    CustomField:
-      allOf:
-        - $ref: '#/components/schemas/CreatedCustomField'
-      properties:
         values:
           type: array
           items:
