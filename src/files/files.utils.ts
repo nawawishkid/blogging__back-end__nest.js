@@ -11,7 +11,13 @@ export const nameUploadedFile: DiskStorageOptions['filename'] = (
     splittedFilename.length > 2
       ? splittedFilename.slice(0, -1).join('.')
       : splittedFilename[0];
-  const [month, day, year] = new Date().toLocaleDateString('en-US').split('/');
+  const [month, day, year] = new Date()
+    .toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+    .split('/');
   const date = [year, month, day].join('-');
 
   cb(null, `${date}-${name}-${Date.now()}.${ext}`);
