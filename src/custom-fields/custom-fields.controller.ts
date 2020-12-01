@@ -25,7 +25,7 @@ import { CreateCustomFieldValueDto } from '../custom-field-values/dto/create-cus
 import { CreateCustomFieldValueResponseDto } from '../custom-field-values/dto/response.dto';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
-import { AuthGuard } from 'src/auth.guard';
+import { AuthGuard } from '../auth.guard';
 
 @UseGuards(AuthGuard)
 @Controller('custom-fields')
@@ -50,7 +50,7 @@ export class CustomFieldsController {
   async findAll(): Promise<FindAllCustomFieldsResponseDto> {
     const customFields: CustomField[] = await this.customFieldsService.findAll();
 
-    if (!customFields) throw new NotFoundException();
+    if (customFields.length === 0) throw new NotFoundException();
 
     return { customFields };
   }
