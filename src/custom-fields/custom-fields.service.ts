@@ -14,7 +14,9 @@ export class CustomFieldsService {
     private customFieldsRepository: Repository<CustomField>,
   ) {}
 
-  create(createCustomFieldDto: CreateCustomFieldDto): Promise<CustomField> {
+  async create(
+    createCustomFieldDto: CreateCustomFieldDto,
+  ): Promise<CustomField> {
     const { values, ...cf } = createCustomFieldDto;
     const customField: CustomField = new CustomField();
     let cfvs: CustomFieldValue[];
@@ -31,18 +33,26 @@ export class CustomFieldsService {
       customField.values = cfvs;
     }
 
-    return this.customFieldsRepository.save(customField);
+    const createdCustomField: CustomField = await this.customFieldsRepository.save(
+      customField,
+    );
+
+    if (!createdCustomField.values) {
+      createdCustomField.values = [];
+    }
+
+    return createdCustomField;
   }
 
   findAll(): Promise<CustomField[]> {
     return this.customFieldsRepository.find({
-      relations: ['custom_field_value'],
+      relations: ['values'],
     });
   }
 
   findOne(id: number): Promise<CustomField> {
     return this.customFieldsRepository.findOne(id, {
-      relations: ['custom_field_value'],
+      relations: ['values'],
     });
   }
 
