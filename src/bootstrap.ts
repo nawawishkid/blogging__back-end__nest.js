@@ -1,3 +1,4 @@
+import * as helmet from 'helmet';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { ValidationPipe } from '@nestjs/common';
@@ -56,6 +57,8 @@ export async function bootstrap(app: NestExpressApplication) {
       },
     });
   }
+
+  app.use(helmet());
 
   middlewares.push(
     session(configService.get('session')),
