@@ -60,7 +60,7 @@ export class SessionsStore extends Store {
     this.logger.debug(`Session: ${JSON.stringify(session, null, 2)}`);
 
     return this.sessionsService
-      .update(sid, session, {
+      .upsert(sid, session, {
         userId: session.user ? session.user.id : undefined,
       })
       .then(() => {

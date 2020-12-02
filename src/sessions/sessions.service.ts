@@ -46,7 +46,7 @@ export class SessionsService {
     this.logger.debug(`Authenticated user:`, { json: user });
     session.user = { id: user.id };
 
-    const createdSession = await this.update(sid, session, {
+    const createdSession = await this.upsert(sid, session, {
       userId: user.id,
     });
 
@@ -63,7 +63,7 @@ export class SessionsService {
     return this.sessionsRepository.findOne(id);
   }
 
-  async update(
+  async upsert(
     id: string,
     session: SessionData,
     updateSessionDto: UpdateSessionDto,
@@ -79,16 +79,36 @@ export class SessionsService {
       session,
       updateSessionDto,
     );
+
     this.logger.debug(`Mapped session entity:`, { json: sessionEntity });
-    /**
-     * @TODO repo.save() allows upserting data. Use repo.update() instead.
-     */
+
     const updatedSession = await this.sessionsRepository.save(sessionEntity);
+
     this.logger.debug(`Updated session:`, { json: updatedSession });
     this.logger.verbose(`Update session successfully`);
     this.logger.verbose(`End of update()`);
 
     return updatedSession;
+  }
+
+  async update(
+    id: string,
+    session: SessionData,
+    updateSessionDto: UpdateSessionDto,
+  ): Promise<Session> {
+    const sessionEntity = this.updateSessionDtoToSessionEntity(
+      id,
+      session,
+      updateSessionDto,
+    );
+    const updateResult: UpdateResult = await this.sessionsRepository.update(
+      id,
+      sessionEntity,
+    );
+
+    if (updateResult.affected === 0) throw new SessionNotFoundException();
+
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<string> {

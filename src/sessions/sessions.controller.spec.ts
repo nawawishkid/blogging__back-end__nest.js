@@ -188,6 +188,21 @@ describe('SessionsController', () => {
         },
       });
     });
+
+    it(`should throw NotFoundException`, () => {
+      jest
+        .spyOn(sessionsService, 'update')
+        .mockRejectedValue(new SessionNotFoundException());
+
+      return expect(
+        controller.update(
+          '1',
+          {} as User,
+          {} as ExpressSessionDataDto,
+          {} as UpdateSessionDto,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('remove()', () => {
@@ -201,14 +216,6 @@ describe('SessionsController', () => {
         .mockRejectedValue(new SessionNotFoundException());
 
       await expect(controller.remove('1')).rejects.toThrow(NotFoundException);
-    });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by sessionsService`, () => {
-      jest.spyOn(sessionsService, 'remove').mockRejectedValue(new Error());
-
-      return expect(controller.remove('1')).rejects.toThrow(
-        InternalServerErrorException,
-      );
     });
   });
 });

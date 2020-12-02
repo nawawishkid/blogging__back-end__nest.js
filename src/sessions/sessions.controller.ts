@@ -98,13 +98,19 @@ export class SessionsController {
       updateSessionDto.userId = user.id;
     }
 
-    const updatedSession = await this.sessionsService.update(
-      id,
-      session,
-      updateSessionDto,
-    );
+    try {
+      const updatedSession = await this.sessionsService.update(
+        id,
+        session,
+        updateSessionDto,
+      );
 
-    return { updatedSession };
+      return { updatedSession };
+    } catch (e) {
+      if (e instanceof SessionNotFoundException) throw new NotFoundException();
+
+      throw e;
+    }
   }
 
   @UseGuards(AuthGuard)
@@ -114,11 +120,9 @@ export class SessionsController {
     try {
       await this.sessionsService.remove(id);
     } catch (e) {
-      if (e instanceof SessionNotFoundException) {
-        throw new NotFoundException();
-      }
+      if (e instanceof SessionNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw new e();
     }
   }
 }

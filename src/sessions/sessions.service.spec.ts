@@ -152,7 +152,7 @@ describe('SessionsService', () => {
     });
   });
 
-  describe('update()', () => {
+  describe('upsert()', () => {
     it('should return updated session with serialized session data', async () => {
       const sid = 'hahaha';
       const expressSession: SessionData = {
@@ -166,7 +166,7 @@ describe('SessionsService', () => {
         .spyOn(sessionsRepository, 'save')
         .mockImplementation(entity => Promise.resolve(entity as Session));
 
-      const updatedSessionEntity = await service.update(
+      const updatedSessionEntity = await service.upsert(
         sid,
         expressSession,
         updateSessionDto,
@@ -180,6 +180,12 @@ describe('SessionsService', () => {
         }),
       );
     });
+  });
+
+  describe(`update()`, () => {
+    it(`should return updated session`, () => {});
+
+    it(`should throw SessionNotFoundException`, () => {});
   });
 
   describe('remove()', () => {
