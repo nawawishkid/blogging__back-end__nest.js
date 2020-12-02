@@ -78,6 +78,7 @@ describe(`Blogs controller`, () => {
 
     await conn.query(`DELETE FROM ${TABLE_PREFIX}blog`);
     await conn.query(`DELETE FROM ${TABLE_PREFIX}user`);
+    await conn.query(`ALTER TABLE ${TABLE_PREFIX}user AUTO_INCREMENT = 1`);
 
     user = await ur.save({
       email: `email@gmail.com`,
@@ -108,18 +109,18 @@ describe(`Blogs controller`, () => {
         return sendCreateBlogRequest(agent, createBlogDto)
           .expect(201)
           .expect(res => {
-            expect(res.body.createdBlog).toEqual(
-              expect.objectContaining({
-                id: expect.any(String),
-                coverImage: null,
-                body: null,
-                excerpt: null,
-                createdAt: expect.any(String),
-                updatedAt: expect.any(String),
-                metadata: null,
-                ...createBlogDto,
-              }),
-            );
+            expect(res.body.createdBlog).toEqual<Blog>({
+              id: expect.any(String),
+              coverImage: null,
+              body: null,
+              excerpt: null,
+              createdAt: expect.any(String),
+              updatedAt: expect.any(String),
+              metadata: null,
+              blogCustomFields: [],
+              author: expect.any(Object),
+              ...createBlogDto,
+            });
           });
       });
 
