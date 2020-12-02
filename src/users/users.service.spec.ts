@@ -12,6 +12,20 @@ import { UsersService } from './users.service';
 
 jest.mock('bcrypt');
 
+class QueryBuilder {
+  where(conditionString: string, option: User) {
+    return this;
+  }
+
+  addSelect() {
+    return this;
+  }
+
+  getOne(): Promise<any> {
+    return Promise.resolve('ok');
+  }
+}
+
 describe('UsersService', () => {
   let usersService: UsersService, usersRepository: Repository<User>;
 
@@ -32,6 +46,7 @@ describe('UsersService', () => {
             findOne: jest.fn(async data => data),
             update: jest.fn(() => ({ affected: 1 })),
             delete: jest.fn(() => ({ affected: 1 })),
+            createQueryBuilder: jest.fn(),
           },
         },
       ],
@@ -49,23 +64,30 @@ describe('UsersService', () => {
       expect(usersRepository.findOne).toHaveBeenCalled();
     });
   });
-  describe(`findByEmail()`, () => {
+  describe(`findByEmailReturnedWithPassword()`, () => {
     it(`should return a user`, async () => {
       let receivedCondition;
       const email = 'email@gmail.com';
-      const select = null;
       const users = { 'a@abc.co': {}, [email]: {} };
 
+      const queryBuilder = new QueryBuilder();
+
       jest
-        .spyOn(usersRepository, 'findOne')
-        .mockImplementation((condition: any) => {
-          receivedCondition = condition;
+        .spyOn(queryBuilder, 'where')
+        .mockImplementation((conditionString, option) => {
+          receivedCondition = option;
 
-          return Promise.resolve(users[condition.where.email] as User);
+          return queryBuilder;
         });
+      jest.spyOn(queryBuilder, 'getOne').mockResolvedValue(users[email]);
+      jest
+        .spyOn(usersRepository, 'createQueryBuilder')
+        .mockReturnValue(queryBuilder as any);
 
-      expect(await usersService.findByEmail(email)).toBe(users[email]);
-      expect(receivedCondition).toStrictEqual({ where: { email }, select });
+      expect(await usersService.findByEmailReturnedWithPassword(email)).toBe(
+        users[email],
+      );
+      expect(receivedCondition).toStrictEqual({ email });
     });
   });
   describe('create()', () => {

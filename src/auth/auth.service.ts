@@ -20,7 +20,9 @@ export class AuthService {
   async authenticate(email: string, password: string) {
     this.logger.verbose(`Authenticating user...`);
     this.logger.debug(`email: "${email}"; password: "${password}"`);
-    const user: User = await this.usersService.findByEmail(email, ['password']);
+    const user: User = await this.usersService.findByEmailReturnedWithPassword(
+      email,
+    );
     this.logger.debug(`user: ${JSON.stringify(user, null, 2)}`);
 
     if (!user) {

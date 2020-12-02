@@ -28,7 +28,7 @@ describe('AuthService', () => {
       ],
     })
       .overrideProvider(UsersService)
-      .useValue({ findByEmail: jest.fn() })
+      .useValue({ findByEmailReturnedWithPassword: jest.fn() })
       .compile();
 
     service = module.get<AuthService>(AuthService);
@@ -45,7 +45,7 @@ describe('AuthService', () => {
         password = '123';
 
       jest
-        .spyOn(usersService, 'findByEmail')
+        .spyOn(usersService, 'findByEmailReturnedWithPassword')
         .mockResolvedValue({ id: 1, email, password } as User);
       mockedBcrypt.compare.mockResolvedValue(true);
 
@@ -53,7 +53,9 @@ describe('AuthService', () => {
     });
 
     it(`should throw EmailNotFoundException when unknown email given`, async () => {
-      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(undefined);
+      jest
+        .spyOn(usersService, 'findByEmailReturnedWithPassword')
+        .mockResolvedValue(undefined);
 
       await expect(
         service.authenticate('123@gmail.com', 'abc'),
@@ -63,7 +65,9 @@ describe('AuthService', () => {
     it(`should throw IncorrectPasswordException`, async () => {
       const user = { id: 1, email: '123@gmail.com', password: '123' };
 
-      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(user as User);
+      jest
+        .spyOn(usersService, 'findByEmailReturnedWithPassword')
+        .mockResolvedValue(user as User);
       mockedBcrypt.compare.mockResolvedValue(false);
 
       await expect(service.authenticate(user.email, 'abc')).rejects.toThrow(

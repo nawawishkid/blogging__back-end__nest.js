@@ -49,11 +49,12 @@ export class UsersService {
     return this.usersRepository.findOne(id);
   }
 
-  async findByEmail(email: string, select: any[] = null): Promise<User> {
-    const foundUser = await this.usersRepository.findOne({
-      where: { email },
-      select,
-    });
+  async findByEmailReturnedWithPassword(email: string): Promise<User> {
+    const foundUser = await this.usersRepository
+      .createQueryBuilder(`user`)
+      .where(`user.email = :email`, { email })
+      .addSelect(`user.password`)
+      .getOne();
 
     return foundUser;
   }
