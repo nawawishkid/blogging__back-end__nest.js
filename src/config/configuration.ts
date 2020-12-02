@@ -48,6 +48,8 @@ export default (env: ConfigEnv) => (): AppConfigs => {
         secure: env.NODE_ENV === 'production',
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days,
       },
+      resave: false,
+      saveUninitialized: false,
     },
     database: {
       host: env.DATABASE_HOST,
