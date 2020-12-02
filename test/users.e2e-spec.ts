@@ -162,6 +162,24 @@ describe(`Users e2e`, () => {
       );
     });
 
+    describe(`GET`, () => {
+      it(`should 200:{user:User}`, () => {
+        return agent
+          .get(`/users/${createdUser.id}`)
+          .expect(200, { user: createdUser });
+      });
+
+      it(`should 404`, () => {
+        return agent.get(`/users/231`).expect(404);
+      });
+
+      it(`should 403`, () => {
+        jest.spyOn(authGuard, 'canActivate').mockReturnValue(false);
+
+        return agent.get(`/users/${createdUser.id}`).expect(403);
+      });
+    });
+
     describe(`PUT`, () => {
       it(`should 200:{updatedUser:User}`, () => {
         return agent
