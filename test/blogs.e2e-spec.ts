@@ -7,7 +7,7 @@ import { Blog } from '../src/blogs/entities/blog.entity';
 import { bootstrap } from '../src/bootstrap';
 import { User } from '../src/users/entities/user.entity';
 import * as supertest from 'supertest';
-import { getConnection, Repository } from 'typeorm';
+import { Connection, getConnection, Repository } from 'typeorm';
 import { CreateBlogRequestBodyDto } from '../src/blogs/dto/create-blog-request-body.dto';
 import { UserMiddleware } from '../src/users/user.middleware';
 import { Logger } from 'winston';
@@ -32,7 +32,8 @@ describe(`Blogs controller`, () => {
     ur: Repository<User>,
     user: User,
     logger: Logger,
-    authGuard: AuthGuard;
+    authGuard: AuthGuard,
+    connection: Connection;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -74,11 +75,13 @@ describe(`Blogs controller`, () => {
     logger.silent = true;
     ur = module.get<Repository<User>>(getRepositoryToken(User));
 
-    const conn = getConnection();
+    connection = getConnection();
 
-    await conn.query(`DELETE FROM ${TABLE_PREFIX}blog`);
-    await conn.query(`DELETE FROM ${TABLE_PREFIX}user`);
-    await conn.query(`ALTER TABLE ${TABLE_PREFIX}user AUTO_INCREMENT = 1`);
+    await connection.query(`DELETE FROM ${TABLE_PREFIX}blog`);
+    await connection.query(`DELETE FROM ${TABLE_PREFIX}user`);
+    await connection.query(
+      `ALTER TABLE ${TABLE_PREFIX}user AUTO_INCREMENT = 1`,
+    );
 
     user = await ur.save({
       email: `email@gmail.com`,
@@ -95,7 +98,7 @@ describe(`Blogs controller`, () => {
 
   afterEach(() => app.close());
 
-  afterAll(() => getConnection().close());
+  afterAll(() => connection.close());
 
   describe(`/blogs`, () => {
     describe(`POST`, () => {
@@ -122,6 +125,62 @@ describe(`Blogs controller`, () => {
               ...createBlogDto,
             });
           });
+      });
+
+      describe(`with custom fields`, () => {
+        const customFieldTableName = TABLE_PREFIX + 'custom_field';
+        const customFieldValueTableName = TABLE_PREFIX + 'custom_field_value';
+
+        beforeEach(async () => {
+          await connection.query(`DELETE FROM ${customFieldTableName}`);
+          await connection.query(`DELETE FROM ${customFieldValueTableName}`);
+          await connection.query(
+            `ALTER TABLE ${customFieldTableName} AUTO_INCREMENT = 1`,
+          );
+          await connection.query(
+            `ALTER TABLE ${customFieldValueTableName} AUTO_INCREMENT = 1`,
+          );
+
+          await connection.query(
+            `INSERT INTO ${customFieldTableName} (name) VALUES ('phase')`,
+          );
+          await connection.query(
+            `INSERT INTO ${customFieldValueTableName} (value, customFieldId) VALUES ('design', 1), ('development', 1)`,
+          );
+        });
+
+        it(`should 201:{createdBlog:Blog}`, async () => {
+          createBlogDto.customFieldValueIds = [1, 2];
+
+          return sendCreateBlogRequest(agent, createBlogDto)
+            .expect(201)
+            .expect(res => {
+              expect(res.body.createdBlog).toEqual<Blog>({
+                id: expect.any(String),
+                coverImage: null,
+                body: null,
+                excerpt: null,
+                createdAt: expect.any(String),
+                updatedAt: expect.any(String),
+                metadata: null,
+                /**
+                 * @TODO Make it return { ...customFieldEntity, value: CustomFieldValue }
+                 */
+                blogCustomFields: [
+                  { blogId: res.body.createdBlog.id, customFieldValueId: 1 },
+                  { blogId: res.body.createdBlog.id, customFieldValueId: 2 },
+                ],
+                author: expect.any(Object),
+                title: createBlogDto.title,
+              });
+            });
+        });
+
+        it(`should 400 on giving duplicated custom field value ids`, async () => {
+          createBlogDto.customFieldValueIds = [1, 2, 1];
+
+          await sendCreateBlogRequest(agent, createBlogDto).expect(400);
+        });
       });
 
       it(`should 400`, () => {
