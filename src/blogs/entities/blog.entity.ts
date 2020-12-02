@@ -3,7 +3,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryColumn,
@@ -28,8 +27,8 @@ export class Blog {
   @Column('text', { nullable: true })
   excerpt?: string;
 
-  @Column('int')
-  authorId: number;
+  @Column('int', { select: false })
+  authorId?: number;
 
   @ManyToOne(
     () => User,
