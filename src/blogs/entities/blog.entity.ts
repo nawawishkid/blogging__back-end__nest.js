@@ -34,9 +34,8 @@ export class Blog {
   @ManyToOne(
     () => User,
     user => user.blogs,
-    { onDelete: 'NO ACTION' },
+    { onDelete: 'CASCADE' },
   )
-  @JoinColumn({ name: 'authorId' })
   author: User;
 
   @Column({ nullable: true })
