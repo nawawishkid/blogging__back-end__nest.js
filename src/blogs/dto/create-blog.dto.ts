@@ -18,4 +18,8 @@ export class CreateBlogDto {
   @IsOptional()
   @IsString()
   excerpt?: string;
+
+  @IsOptional()
+  @IsInt({ each: true })
+  customFieldValueIds?: number[];
 }

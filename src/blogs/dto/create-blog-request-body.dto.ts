@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateBlogRequestBodyDto {
   @IsString()
@@ -15,4 +15,8 @@ export class CreateBlogRequestBodyDto {
   @IsOptional()
   @IsString()
   excerpt?: string;
+
+  @IsOptional()
+  @IsInt({ each: true })
+  customFieldValueIds?: number[];
 }

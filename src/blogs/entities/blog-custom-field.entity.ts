@@ -14,11 +14,11 @@ export class BlogCustomField {
     () => Blog,
     blog => blog.blogCustomFields,
   )
-  blog: Blog;
+  blog?: Blog;
 
   @ManyToOne(
     () => CustomFieldValue,
     cfv => cfv.blogCustomFields,
   )
-  customFieldValue: CustomFieldValue;
+  customFieldValue?: CustomFieldValue;
 }

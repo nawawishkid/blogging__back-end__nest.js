@@ -1,14 +1,24 @@
+import { ER_NO_REFERENCED_ROW_2 } from 'mysql/lib/protocol/constants/errors';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
+import {
+  DeleteResult,
+  QueryFailedError,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { BlogCustomField } from './entities/blog-custom-field.entity';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 
 describe('BlogsService', () => {
-  let service: BlogsService, blogsRepository: Repository<Blog>;
+  let service: BlogsService,
+    blogsRepository: Repository<Blog>,
+    blogCustomFieldsRepository: Repository<BlogCustomField>;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -26,11 +36,24 @@ describe('BlogsService', () => {
             update: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(BlogCustomField),
+          useValue: {
+            find: jest.fn(),
+            save: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn(),
+            update: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<BlogsService>(BlogsService);
     blogsRepository = module.get<Repository<Blog>>(getRepositoryToken(Blog));
+    blogCustomFieldsRepository = module.get<Repository<BlogCustomField>>(
+      getRepositoryToken(BlogCustomField),
+    );
   });
 
   it('should be defined', () => {
@@ -81,20 +104,92 @@ describe('BlogsService', () => {
   });
 
   describe(`create(createBlogDto: CreateBlogDto)`, () => {
+    let createBlogDto: CreateBlogDto, createdBlog: Blog;
+
+    beforeEach(() => {
+      createBlogDto = {
+        title: `ok`,
+        customFieldValueIds: [1, 2, 3],
+        authorId: 1,
+      };
+      createdBlog = { id: `randomstring` } as Blog;
+    });
+
     it(`should return created blog`, () => {
-      const createBlogDto = {} as CreateBlogDto;
-      const createdBlog = {} as Blog;
+      delete createBlogDto.customFieldValueIds;
 
       jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
+      jest.spyOn(service, 'findOne').mockResolvedValue(createdBlog);
 
       return expect(service.create(createBlogDto)).resolves.toBe(createdBlog);
     });
 
+    it(`should assign uuid to the blog`, async () => {
+      let receivedId;
+
+      jest.spyOn(blogsRepository, 'save').mockImplementation(data => {
+        receivedId = data.id;
+
+        return Promise.resolve({} as Blog);
+      });
+
+      await service.create(createBlogDto);
+
+      expect(receivedId).toEqual(expect.any(String));
+    });
+
+    it(`should create blog custom field`, async () => {
+      let receivedBlogCustomFieldEntities;
+
+      jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
+      jest
+        .spyOn(blogCustomFieldsRepository, 'save')
+        .mockImplementation(data => {
+          receivedBlogCustomFieldEntities = data;
+
+          return Promise.resolve({} as BlogCustomField);
+        });
+
+      await service.create(createBlogDto);
+
+      expect(receivedBlogCustomFieldEntities).toEqual(
+        expect.arrayContaining(
+          createBlogDto.customFieldValueIds.map<BlogCustomField>(id => ({
+            blogId: createdBlog.id,
+            customFieldValueId: id,
+          })),
+        ),
+      );
+    });
+
+    it(`should throw CustomFieldValueNotFoundException`, () => {
+      const error: any = new QueryFailedError('lorem', [], []);
+
+      error.errno = ER_NO_REFERENCED_ROW_2;
+
+      jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
+      jest.spyOn(blogCustomFieldsRepository, 'save').mockRejectedValue(error);
+
+      return expect(service.create(createBlogDto)).rejects.toThrow(
+        CustomFieldValueNotFoundException,
+      );
+    });
+
     it(`should throw what blogs repository throws`, () => {
-      const createBlogDto = {} as CreateBlogDto;
+      delete createBlogDto.customFieldValueIds;
+
       const error = new Error();
 
       jest.spyOn(blogsRepository, 'save').mockRejectedValue(error);
+
+      return expect(service.create(createBlogDto)).rejects.toThrow(error);
+    });
+
+    it(`should throw what blog custom fields repository throws`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
+      jest.spyOn(blogCustomFieldsRepository, 'save').mockRejectedValue(error);
 
       return expect(service.create(createBlogDto)).rejects.toThrow(error);
     });
