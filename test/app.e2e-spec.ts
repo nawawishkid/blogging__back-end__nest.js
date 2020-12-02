@@ -16,6 +16,8 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { CreateBlogRequestBodyDto } from 'src/blogs/dto/create-blog-request-body.dto';
 import { Blog } from 'src/blogs/entities/blog.entity';
 import { UpdateBlogRequestBodyDto } from 'src/blogs/dto/update-blog-request-body.dto';
+import { CreateCustomFieldDto } from 'src/custom-fields/dto/create-custom-field.dto';
+import { CustomField } from 'src/custom-fields/entities/custom-field.entity';
 
 const TABLE_PREFIX = `appe2e_`;
 
@@ -69,6 +71,7 @@ describe(`Application e2e tests`, () => {
       .compile();
 
     logger = module.get<Logger>(WINSTON_MODULE_PROVIDER);
+    logger.level = 'info';
     logger.silent = true;
     connection = getConnection();
 
@@ -186,7 +189,7 @@ describe(`Application e2e tests`, () => {
         it(``, async () => {
           const sessionsQty = 10;
 
-          await Promise.all(
+          const createdSessions = await Promise.all(
             Array(sessionsQty)
               .fill(null)
               .map(() => {
@@ -204,6 +207,39 @@ describe(`Application e2e tests`, () => {
             .expect(res => {
               expect(res.body.sessions.length).toEqual(sessionsQty + 1);
             });
+          await Promise.all(
+            createdSessions.map(cs =>
+              agent.delete(`/sessions/${cs.id}`).expect(204),
+            ),
+          );
+        });
+      });
+
+      describe(`Create a blog -> add a custom field -> add custom field values -> add the custom field to the blog`, () => {
+        it(``, async () => {
+          const createBlogDto: CreateBlogRequestBodyDto = {
+            title: `How to how to`,
+          };
+          const createdBlog: Blog = await createBlog(createBlogDto)
+            .expect(201)
+            .then(res => res.body.createdBlog);
+          const createCustomFieldDto: CreateCustomFieldDto = {
+            name: `phase`,
+            values: [`design`, `development`],
+          };
+          const createdCustomField: CustomField = await agent
+            .post(`/custom-fields`)
+            .send(createCustomFieldDto)
+            .expect(201)
+            .then(res => res.body.createdCustomField);
+          const updateBlogRequestBodyDto: UpdateBlogRequestBodyDto = {
+            customFieldValueIds: createdCustomField.values.map(v => v.id),
+          };
+
+          await agent
+            .put(`/blogs/${createdBlog.id}`)
+            .send(updateBlogRequestBodyDto)
+            .expect(200);
         });
       });
     });
