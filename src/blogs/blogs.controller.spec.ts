@@ -151,6 +151,31 @@ describe('BlogsController', () => {
         controller.update('blog-id', {} as UpdateBlogRequestBodyDto),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it(`should throw BadRequestException`, () => {
+      const updateBlogRequestDto: UpdateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 3],
+      };
+
+      jest
+        .spyOn(blogsService, 'update')
+        .mockRejectedValue(new CustomFieldValueNotFoundException());
+
+      return expect(
+        controller.update('id', updateBlogRequestDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsService, 'update').mockRejectedValue(error);
+
+      return expect(
+        controller.update('id', {} as CreateBlogRequestBodyDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe(`remove(blogId: string)`, () => {

@@ -44,6 +44,7 @@ export class Blog {
   @OneToMany(
     () => BlogCustomField,
     bcf => bcf.blog,
+    { cascade: ['insert'] },
   )
   blogCustomFields: BlogCustomField[];
 

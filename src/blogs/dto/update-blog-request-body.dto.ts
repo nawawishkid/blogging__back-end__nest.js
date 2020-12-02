@@ -1,19 +1,6 @@
-import { IsOptional, IsString } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateBlogRequestBodyDto } from './create-blog-request-body.dto';
 
-export class UpdateBlogRequestBodyDto {
-  @IsOptional()
-  @IsString()
-  title?: string;
-
-  @IsOptional()
-  @IsString()
-  body?: string;
-
-  @IsOptional()
-  @IsString()
-  coverImage?: string;
-
-  @IsOptional()
-  @IsString()
-  excerpt?: string;
-}
+export class UpdateBlogRequestBodyDto extends PartialType(
+  CreateBlogRequestBodyDto,
+) {}

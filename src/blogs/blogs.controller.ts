@@ -86,7 +86,9 @@ export class BlogsController {
 
       return { updatedBlog };
     } catch (e) {
-      if (e instanceof BlogNotFoundException) throw new NotFoundException();
+      if (e instanceof BlogNotFoundException) throw new NotFoundException(e);
+      if (e instanceof CustomFieldValueNotFoundException)
+        throw new BadRequestException(e);
 
       throw e;
     }

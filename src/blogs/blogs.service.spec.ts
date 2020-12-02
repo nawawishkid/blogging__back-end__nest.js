@@ -196,6 +196,15 @@ describe('BlogsService', () => {
   });
 
   describe(`update(updateBlogDto: UpdateBlogDto)`, () => {
+    let updateBlogDto: UpdateBlogDto, updatedBlog: Blog;
+
+    beforeEach(() => {
+      updateBlogDto = {
+        customFieldValueIds: [1, 2, 3],
+      };
+      updatedBlog = { id: `randomstring` } as Blog;
+    });
+
     it(`should return updated blog`, () => {
       const updateBlogDto = {} as UpdateBlogDto;
       const updatedBlog = {} as Blog;
@@ -210,6 +219,28 @@ describe('BlogsService', () => {
       ).resolves.toStrictEqual(updatedBlog);
     });
 
+    it(`should create blog custom field`, async () => {
+      const id = 'id';
+      let receivedBlogCustomFieldEntities;
+
+      jest.spyOn(blogsRepository, 'update').mockImplementation((id, data) => {
+        receivedBlogCustomFieldEntities = data.blogCustomFields;
+
+        return Promise.resolve({ affected: 1 } as UpdateResult);
+      });
+
+      await service.update(id, updateBlogDto);
+
+      expect(receivedBlogCustomFieldEntities).toEqual(
+        expect.arrayContaining(
+          updateBlogDto.customFieldValueIds.map<BlogCustomField>(cfvid => ({
+            blogId: id,
+            customFieldValueId: cfvid,
+          })),
+        ),
+      );
+    });
+
     it(`should throw the BlogNotFoundException if given blog id could not be found (no upsert)`, () => {
       jest
         .spyOn(blogsRepository, 'update')
@@ -218,6 +249,27 @@ describe('BlogsService', () => {
       return expect(
         service.update('blog-not-found', {} as UpdateBlogDto),
       ).rejects.toThrow(BlogNotFoundException);
+    });
+
+    it(`should throw CustomFieldValueNotFoundException`, () => {
+      const id = 'id';
+      const error: any = new QueryFailedError('lorem', [], []);
+
+      error.errno = ER_NO_REFERENCED_ROW_2;
+
+      jest.spyOn(blogsRepository, 'update').mockRejectedValue(error);
+
+      return expect(service.update(id, updateBlogDto)).rejects.toThrow(
+        CustomFieldValueNotFoundException,
+      );
+    });
+
+    it(`should throw what blog custom fields repository throws`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsRepository, 'update').mockRejectedValue(error);
+
+      return expect(service.update('id', updateBlogDto)).rejects.toThrow(error);
     });
   });
 

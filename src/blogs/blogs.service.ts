@@ -23,6 +23,9 @@ export class BlogsService {
     private blogCustomFieldsRepository: Repository<BlogCustomField>,
   ) {}
 
+  /**
+   * @TODO Should I use cascading?
+   */
   async create(createBlogDto: CreateBlogDto) {
     const { customFieldValueIds, ...b } = createBlogDto;
     const blog: Blog = new Blog();
@@ -81,14 +84,40 @@ export class BlogsService {
     id: string,
     updateBlogDto: UpdateBlogDto,
   ): Promise<Blog> | undefined {
-    const updateResult: UpdateResult = await this.blogsRepository.update(
-      id,
-      updateBlogDto,
-    );
+    const { customFieldValueIds, ...b } = updateBlogDto;
+    const blog: Blog = new Blog();
 
-    if (updateResult.affected === 0) throw new BlogNotFoundException();
+    Object.assign(blog, b);
 
-    return this.findOne(id);
+    if (Array.isArray(customFieldValueIds) && customFieldValueIds.length) {
+      blog.blogCustomFields = customFieldValueIds.map(cfvid => {
+        const bcf: BlogCustomField = new BlogCustomField();
+
+        bcf.blogId = id;
+        bcf.customFieldValueId = cfvid;
+
+        return bcf;
+      });
+    }
+
+    try {
+      const updateResult: UpdateResult = await this.blogsRepository.update(
+        id,
+        blog,
+      );
+
+      if (updateResult.affected === 0) throw new BlogNotFoundException();
+
+      return this.findOne(id);
+    } catch (e) {
+      if (
+        e instanceof QueryFailedError &&
+        (e as any).errno === ER_NO_REFERENCED_ROW_2
+      )
+        throw new CustomFieldValueNotFoundException();
+
+      throw e;
+    }
   }
 
   async remove(id: string): Promise<string> {
