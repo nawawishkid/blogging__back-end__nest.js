@@ -1,15 +1,16 @@
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { ValidationPipe } from '@nestjs/common';
-import { SessionsMiddleware } from './sessions/sessions.middleware';
 import { UserMiddleware } from './users/user.middleware';
 import { AppExceptionFilter } from './exception.filter';
 import { tap } from 'rxjs/operators';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as session from 'express-session';
+import { ConfigService } from '@nestjs/config';
 
 export async function bootstrap(app: NestExpressApplication) {
   const logger = app.get<Logger>(WINSTON_MODULE_PROVIDER);
-  const sessionMiddleware = app.get(SessionsMiddleware);
+  const configService = app.get<ConfigService>(ConfigService);
   const userMiddleware = app.get(UserMiddleware);
   const middlewares = [];
 
@@ -57,7 +58,7 @@ export async function bootstrap(app: NestExpressApplication) {
   }
 
   middlewares.push(
-    sessionMiddleware.use.bind(sessionMiddleware),
+    session(configService.get('session')),
     userMiddleware.use.bind(userMiddleware),
   );
 

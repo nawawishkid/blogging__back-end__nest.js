@@ -6,7 +6,6 @@ import { SessionsStore } from './sessions.store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Session } from './entities/session.entity';
-import { SessionsMiddleware } from './sessions.middleware';
 import { AuthModule } from '../auth/auth.module';
 
 const getSessionOptionsProvider = (
@@ -28,19 +27,9 @@ const sessionOptionsProvider = getSessionOptionsProvider();
 
 @Module({
   imports: [TypeOrmModule.forFeature([Session]), ConfigModule, AuthModule],
-  providers: [
-    SessionsService,
-    SessionsStore,
-    SessionsMiddleware,
-    sessionOptionsProvider,
-  ],
+  providers: [SessionsService, SessionsStore, sessionOptionsProvider],
   controllers: [SessionsController],
-  exports: [
-    SessionsService,
-    SessionsStore,
-    SessionsMiddleware,
-    sessionOptionsProvider,
-  ],
+  exports: [SessionsService, SessionsStore, sessionOptionsProvider],
 })
 export class SessionsModule {
   static forRoot(options: SessionOptions): DynamicModule {
