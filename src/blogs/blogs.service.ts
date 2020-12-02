@@ -1,10 +1,12 @@
-import { ER_NO_REFERENCED_ROW_2 } from 'mysql/lib/protocol/constants/errors';
+import {
+  ER_NO_REFERENCED_ROW_2,
+  ER_DUP_ENTRY,
+} from 'mysql/lib/protocol/constants/errors';
 import { nanoid } from 'nanoid';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DeleteResult,
-  InsertResult,
   QueryFailedError,
   Repository,
   UpdateResult,
@@ -15,6 +17,7 @@ import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 import { BlogCustomField } from './entities/blog-custom-field.entity';
 import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 @Injectable()
 export class BlogsService {
@@ -50,10 +53,13 @@ export class BlogsService {
     });
 
     try {
-      await this.blogCustomFieldsRepository.save(blogCustomFields);
+      await this.blogCustomFieldsRepository.insert(blogCustomFields);
 
       return this.findOne(createdBlog.id);
     } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedBlogCustomFieldException();
+
       if (
         e instanceof QueryFailedError &&
         (e as any).errno === ER_NO_REFERENCED_ROW_2
@@ -118,6 +124,9 @@ export class BlogsService {
 
       return this.findOne(id);
     } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedBlogCustomFieldException();
+
       if (
         e instanceof QueryFailedError &&
         (e as any).errno === ER_NO_REFERENCED_ROW_2

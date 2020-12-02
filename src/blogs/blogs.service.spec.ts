@@ -1,4 +1,7 @@
-import { ER_NO_REFERENCED_ROW_2 } from 'mysql/lib/protocol/constants/errors';
+import {
+  ER_NO_REFERENCED_ROW_2,
+  ER_DUP_ENTRY,
+} from 'mysql/lib/protocol/constants/errors';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
@@ -15,6 +18,7 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { BlogCustomField } from './entities/blog-custom-field.entity';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 describe('BlogsService', () => {
   let service: BlogsService,
@@ -145,11 +149,11 @@ describe('BlogsService', () => {
 
       jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
       jest
-        .spyOn(blogCustomFieldsRepository, 'save')
+        .spyOn(blogCustomFieldsRepository, 'insert')
         .mockImplementation(data => {
           receivedBlogCustomFieldEntities = data;
 
-          return Promise.resolve({} as BlogCustomField);
+          return Promise.resolve({} as InsertResult);
         });
 
       await service.create(createBlogDto);
@@ -170,10 +174,23 @@ describe('BlogsService', () => {
       error.errno = ER_NO_REFERENCED_ROW_2;
 
       jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
-      jest.spyOn(blogCustomFieldsRepository, 'save').mockRejectedValue(error);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
 
       return expect(service.create(createBlogDto)).rejects.toThrow(
         CustomFieldValueNotFoundException,
+      );
+    });
+
+    it(`should throw DuplicatedBlogCustomFieldException`, () => {
+      const error: any = new QueryFailedError('lorem', [], []);
+
+      error.errno = ER_DUP_ENTRY;
+
+      jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
+
+      return expect(service.create(createBlogDto)).rejects.toThrow(
+        DuplicatedBlogCustomFieldException,
       );
     });
 
@@ -191,7 +208,7 @@ describe('BlogsService', () => {
       const error = new Error();
 
       jest.spyOn(blogsRepository, 'save').mockResolvedValue(createdBlog);
-      jest.spyOn(blogCustomFieldsRepository, 'save').mockRejectedValue(error);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
 
       return expect(service.create(createBlogDto)).rejects.toThrow(error);
     });
@@ -271,6 +288,21 @@ describe('BlogsService', () => {
 
       return expect(service.update(id, updateBlogDto)).rejects.toThrow(
         CustomFieldValueNotFoundException,
+      );
+    });
+
+    it(`should throw DuplicatedBlogCustomFieldException`, () => {
+      const error: any = new QueryFailedError('lorem', [], []);
+
+      error.errno = ER_DUP_ENTRY;
+
+      jest
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
+
+      return expect(service.update('lorem', updateBlogDto)).rejects.toThrow(
+        DuplicatedBlogCustomFieldException,
       );
     });
 

@@ -27,6 +27,7 @@ import {
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
 import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 @UseGuards(AuthGuard)
 @Controller('blogs')
@@ -48,7 +49,10 @@ export class BlogsController {
 
       return { createdBlog };
     } catch (e) {
-      if (e instanceof CustomFieldValueNotFoundException)
+      if (
+        e instanceof DuplicatedBlogCustomFieldException ||
+        e instanceof CustomFieldValueNotFoundException
+      )
         throw new BadRequestException(e);
 
       throw e;
@@ -87,6 +91,8 @@ export class BlogsController {
       return { updatedBlog };
     } catch (e) {
       if (e instanceof BlogNotFoundException) throw new NotFoundException(e);
+      if (e instanceof DuplicatedBlogCustomFieldException)
+        throw new BadRequestException(e);
       if (e instanceof CustomFieldValueNotFoundException)
         throw new BadRequestException(e);
 
