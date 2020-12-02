@@ -89,12 +89,7 @@ describe(`Session controller`, () => {
     agent = request.agent(app.getHttpServer());
   });
 
-  afterEach(async () => {
-    await ur.query(`DELETE FROM ${ur.metadata.tableName}`);
-    await ur.query(`ALTER TABLE ${ur.metadata.tableName} AUTO_INCREMENT = 1`);
-    await ur.query(`DELETE FROM ${TABLE_PREFIX}session`);
-    await app.close();
-  });
+  afterEach(() => app.close());
 
   afterAll(() => getConnection().close());
 
@@ -235,6 +230,12 @@ describe(`Session controller`, () => {
           .put(`/sessions/${createdSession.id}`)
           .send({ data: {} })
           .expect(400);
+      });
+
+      it(`should 404`, async () => {
+        await sendCreateSessionRequest(agent);
+
+        return agent.put(`/sessions/lorem-ipsum`).expect(404);
       });
 
       it(`should 403`, () => {
