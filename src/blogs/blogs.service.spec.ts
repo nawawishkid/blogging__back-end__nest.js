@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
 import {
   DeleteResult,
+  InsertResult,
   QueryFailedError,
   Repository,
   UpdateResult,
@@ -44,6 +45,7 @@ describe('BlogsService', () => {
             findOne: jest.fn(),
             delete: jest.fn(),
             update: jest.fn(),
+            insert: jest.fn(),
           },
         },
       ],
@@ -223,11 +225,16 @@ describe('BlogsService', () => {
       const id = 'id';
       let receivedBlogCustomFieldEntities;
 
-      jest.spyOn(blogsRepository, 'update').mockImplementation((id, data) => {
-        receivedBlogCustomFieldEntities = data.blogCustomFields;
+      jest
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
+      jest
+        .spyOn(blogCustomFieldsRepository, 'insert')
+        .mockImplementation(data => {
+          receivedBlogCustomFieldEntities = data;
 
-        return Promise.resolve({ affected: 1 } as UpdateResult);
-      });
+          return Promise.resolve({} as InsertResult);
+        });
 
       await service.update(id, updateBlogDto);
 
@@ -257,7 +264,10 @@ describe('BlogsService', () => {
 
       error.errno = ER_NO_REFERENCED_ROW_2;
 
-      jest.spyOn(blogsRepository, 'update').mockRejectedValue(error);
+      jest
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as UpdateResult);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
 
       return expect(service.update(id, updateBlogDto)).rejects.toThrow(
         CustomFieldValueNotFoundException,

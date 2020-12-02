@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DeleteResult,
+  InsertResult,
   QueryFailedError,
   Repository,
   UpdateResult,
@@ -89,24 +90,31 @@ export class BlogsService {
 
     Object.assign(blog, b);
 
-    if (Array.isArray(customFieldValueIds) && customFieldValueIds.length) {
-      blog.blogCustomFields = customFieldValueIds.map(cfvid => {
-        const bcf: BlogCustomField = new BlogCustomField();
+    const updateResult: UpdateResult = await this.blogsRepository.update(
+      id,
+      blog,
+    );
 
-        bcf.blogId = id;
-        bcf.customFieldValueId = cfvid;
+    if (updateResult.affected === 0) throw new BlogNotFoundException();
 
-        return bcf;
-      });
-    }
+    if (
+      !customFieldValueIds ||
+      !Array.isArray(customFieldValueIds) ||
+      customFieldValueIds.length === 0
+    )
+      return this.findOne(id);
+
+    const blogCustomFields = customFieldValueIds.map(cfvid => {
+      const bcf: BlogCustomField = new BlogCustomField();
+
+      bcf.blogId = id;
+      bcf.customFieldValueId = cfvid;
+
+      return bcf;
+    });
 
     try {
-      const updateResult: UpdateResult = await this.blogsRepository.update(
-        id,
-        blog,
-      );
-
-      if (updateResult.affected === 0) throw new BlogNotFoundException();
+      await this.blogCustomFieldsRepository.insert(blogCustomFields);
 
       return this.findOne(id);
     } catch (e) {
