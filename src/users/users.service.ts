@@ -12,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UserAlreadyExistsException } from './exceptions/user-already-exists.exception';
 import { UserNotFoundException } from './exceptions/user-not-found.exception';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -24,11 +25,14 @@ export class UsersService {
       // Prevent upsertion from repo.save() method
       delete (createUserDto as any).id;
 
-      const createdUser: User = await this.usersRepository.save(createUserDto);
+      const hashedPassword = await hash(createUserDto.password, 10);
 
-      delete createdUser.password;
+      const createdUser: User = await this.usersRepository.save({
+        ...createUserDto,
+        password: hashedPassword,
+      });
 
-      return createdUser;
+      return this.findOne(createdUser.id);
     } catch (e) {
       if (
         ((e instanceof QueryFailedError) as any) &&
