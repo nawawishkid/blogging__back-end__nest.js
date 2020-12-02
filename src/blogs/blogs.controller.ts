@@ -9,6 +9,7 @@ import {
   NotFoundException,
   HttpCode,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth.guard';
 import { User as UserEntity } from '../users/entities/user.entity';
@@ -25,6 +26,7 @@ import {
 } from './dto/response.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
 
 @UseGuards(AuthGuard)
 @Controller('blogs')
@@ -41,9 +43,16 @@ export class BlogsController {
       ...createBlogRequestBodyDto,
     };
 
-    const createdBlog = await this.blogsService.create(createBlogDto);
+    try {
+      const createdBlog = await this.blogsService.create(createBlogDto);
 
-    return { createdBlog };
+      return { createdBlog };
+    } catch (e) {
+      if (e instanceof CustomFieldValueNotFoundException)
+        throw new BadRequestException(e);
+
+      throw e;
+    }
   }
 
   @Get()

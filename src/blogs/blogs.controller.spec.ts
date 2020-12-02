@@ -1,8 +1,10 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
 import { User } from 'src/users/entities/user.entity';
 import { BlogsController } from './blogs.controller';
 import { BlogsService } from './blogs.service';
+import { CreateBlogRequestBodyDto } from './dto/create-blog-request-body.dto';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { Blog } from './entities/blog.entity';
@@ -87,6 +89,45 @@ describe('BlogsController', () => {
       return expect(
         controller.create({} as User, {} as CreateBlogDto),
       ).resolves.toEqual({ createdBlog });
+    });
+
+    it(`should assign authorId`, async () => {
+      const user: User = { id: 123 } as User;
+      let receivedAuthorId;
+
+      jest.spyOn(blogsService, 'create').mockImplementation(data => {
+        receivedAuthorId = data.authorId;
+
+        return Promise.resolve({} as Blog);
+      });
+      await controller.create(user, {} as CreateBlogRequestBodyDto);
+
+      expect(receivedAuthorId).toEqual(user.id);
+    });
+
+    it(`should throw BadRequestException`, () => {
+      const createBlogRequestDto: CreateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 3],
+      };
+
+      jest
+        .spyOn(blogsService, 'create')
+        .mockRejectedValue(new CustomFieldValueNotFoundException());
+
+      return expect(
+        controller.create({} as User, createBlogRequestDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsService, 'create').mockRejectedValue(error);
+
+      return expect(
+        controller.create({} as User, {} as CreateBlogRequestBodyDto),
+      ).rejects.toThrow(error);
     });
   });
 
