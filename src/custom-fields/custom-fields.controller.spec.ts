@@ -110,6 +110,14 @@ describe('CustomFieldsController', () => {
         controller.create({} as CreateCustomFieldDto),
       ).rejects.toThrow(ConflictException);
     });
+
+    it(`should throw what is thrown by the service`, () => {
+      jest.spyOn(customFieldsService, 'create').mockRejectedValue(new Error());
+
+      return expect(
+        controller.create({} as CreateCustomFieldDto),
+      ).rejects.toThrow(Error);
+    });
   });
 
   describe(`update(customFieldId: number, updateCustomFieldDto: UpdateCustomFieldDto)`, () => {
@@ -133,6 +141,14 @@ describe('CustomFieldsController', () => {
       return expect(
         controller.update('1', {} as UpdateCustomFieldDto),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it(`should throw what is thrown by the service`, () => {
+      jest.spyOn(customFieldsService, 'update').mockRejectedValue(new Error());
+
+      return expect(
+        controller.update('1', {} as UpdateCustomFieldDto),
+      ).rejects.toThrow(Error);
     });
   });
 
