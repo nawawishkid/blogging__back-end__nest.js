@@ -325,6 +325,13 @@ describe(`Custom fields module e2e test`, () => {
           .expect(400);
       });
 
+      it(`should 400`, () => {
+        return agent
+          .post(`/custom-fields/123/values`)
+          .send(createCustomFieldValueRequestBodyDto)
+          .expect(400);
+      });
+
       it(`should 403`, () => {
         jest.spyOn(authGuard, 'canActivate').mockResolvedValue(false);
 
