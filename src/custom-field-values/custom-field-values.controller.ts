@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -19,6 +20,7 @@ import {
 import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
+import { DuplicatedCustomFieldValueException } from './exceptions/duplicated-custom-field-value.exception';
 
 @UseGuards(AuthGuard)
 @Controller('custom-field-values')
@@ -61,7 +63,10 @@ export class CustomFieldValuesController {
       return { updatedCustomFieldValue };
     } catch (e) {
       if (e instanceof CustomFieldValueNotFoundException)
-        throw new NotFoundException();
+        throw new NotFoundException(e);
+
+      if (e instanceof DuplicatedCustomFieldValueException)
+        throw new ConflictException(e);
 
       throw e;
     }

@@ -1,10 +1,11 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomFieldValuesController } from './custom-field-values.controller';
 import { CustomFieldValuesService } from './custom-field-values.service';
 import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
+import { DuplicatedCustomFieldValueException } from './exceptions/duplicated-custom-field-value.exception';
 
 describe('CustomFieldValuesController', () => {
   let controller: CustomFieldValuesController,
@@ -93,6 +94,16 @@ describe('CustomFieldValuesController', () => {
       return expect(
         controller.update('1', {} as UpdateCustomFieldValueDto),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it(`should throw ConflictException`, () => {
+      jest
+        .spyOn(service, 'update')
+        .mockRejectedValue(new DuplicatedCustomFieldValueException());
+
+      return expect(
+        controller.update('1', {} as UpdateCustomFieldValueDto),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

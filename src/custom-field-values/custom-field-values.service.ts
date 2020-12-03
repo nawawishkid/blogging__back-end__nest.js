@@ -1,10 +1,17 @@
+import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import {
+  DeleteResult,
+  QueryFailedError,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { CreateCustomFieldValueDto } from './dto/create-custom-field-value.dto';
 import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
+import { DuplicatedCustomFieldValueException } from './exceptions/duplicated-custom-field-value.exception';
 
 @Injectable()
 export class CustomFieldValuesService {
@@ -13,10 +20,19 @@ export class CustomFieldValuesService {
     private readonly customFieldValuesRepository: Repository<CustomFieldValue>,
   ) {}
 
-  create(
+  async create(
     createCustomFieldValueDto: CreateCustomFieldValueDto,
   ): Promise<CustomFieldValue> {
-    return this.customFieldValuesRepository.save(createCustomFieldValueDto);
+    try {
+      return await this.customFieldValuesRepository.save(
+        createCustomFieldValueDto,
+      );
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedCustomFieldValueException();
+
+      throw e;
+    }
   }
 
   findAll(): Promise<CustomFieldValue[]> {
@@ -31,15 +47,22 @@ export class CustomFieldValuesService {
     id: number,
     updateCustomFieldValueDto: UpdateCustomFieldValueDto,
   ): Promise<CustomFieldValue> {
-    const updateResult: UpdateResult = await this.customFieldValuesRepository.update(
-      id,
-      updateCustomFieldValueDto,
-    );
+    try {
+      const updateResult: UpdateResult = await this.customFieldValuesRepository.update(
+        id,
+        updateCustomFieldValueDto,
+      );
 
-    if (updateResult.affected === 0)
-      throw new CustomFieldValueNotFoundException();
+      if (updateResult.affected === 0)
+        throw new CustomFieldValueNotFoundException();
 
-    return this.findOne(id);
+      return this.findOne(id);
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedCustomFieldValueException();
+
+      throw e;
+    }
   }
 
   async remove(id: number): Promise<number> {

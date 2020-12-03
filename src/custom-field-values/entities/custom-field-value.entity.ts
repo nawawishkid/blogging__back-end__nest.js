@@ -5,10 +5,12 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { CustomField } from '../../custom-fields/entities/custom-field.entity';
 
 @Entity()
+@Unique([`customFieldId`, `value`])
 export class CustomFieldValue {
   @PrimaryGeneratedColumn()
   id: number;
