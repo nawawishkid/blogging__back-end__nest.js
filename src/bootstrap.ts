@@ -59,6 +59,8 @@ export async function bootstrap(app: NestExpressApplication) {
         return next.handle().pipe(tap(handler, handler));
       },
     });
+  } else {
+    app.enableCors(configService.get('cors'));
   }
 
   app.use(helmet());

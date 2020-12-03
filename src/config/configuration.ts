@@ -1,3 +1,4 @@
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { SessionOptions } from 'express-session';
 
 /**
@@ -7,6 +8,7 @@ export class AppConfigs {
   url: string;
   port: number;
   session: SessionOptions;
+  cors: CorsOptions;
   database: {
     host: string;
     port: number;
@@ -28,6 +30,7 @@ export class ConfigEnv {
   DATABASE_USER: string;
   DATABASE_PASSWORD: string;
   DATABASE_NAME: string;
+  CORS_ORIGIN: string;
   LOGGING_LEVEL?: string;
   PORT?: string;
 }
@@ -50,6 +53,9 @@ export default (env: ConfigEnv) => (): AppConfigs => {
       },
       resave: false,
       saveUninitialized: false,
+    },
+    cors: {
+      origin: env.CORS_ORIGIN,
     },
     database: {
       host: env.DATABASE_HOST,
