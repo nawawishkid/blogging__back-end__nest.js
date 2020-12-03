@@ -81,46 +81,20 @@ describe('CustomFieldsService', () => {
   });
 
   describe(`create(createCustomFieldDto: CreateCustomFieldDto)`, () => {
-    it(`should return the created customField`, async () => {
-      const createCustomFieldDto: CreateCustomFieldDto = {
-        name: `Phase`,
-        values: [`development`, `maintenance`, `design`],
-      };
-      const entity = {
-        name: createCustomFieldDto.name,
-        values: createCustomFieldDto.values.map(v => ({ value: v })),
-      };
-
-      jest
-        .spyOn(customFieldsRepository, 'save')
-        .mockResolvedValue(entity as any);
-
-      expect(await service.create(createCustomFieldDto)).toStrictEqual(entity);
-      expect(
-        (customFieldsRepository.save as jest.Mock<any>).mock.calls[0][0],
-      ).toEqual(entity);
-    });
-
-    it(`should return the created customField`, async () => {
+    it(`should return the created customField`, () => {
       const createCustomFieldDto: CreateCustomFieldDto = {
         name: `Phase`,
       };
-      const entity = {
-        name: createCustomFieldDto.name,
-        values: [],
-      };
+      const createdCustomField: CustomField = {} as CustomField;
 
+      jest.spyOn(service, 'findOne').mockResolvedValue(createdCustomField);
       jest
         .spyOn(customFieldsRepository, 'save')
-        .mockResolvedValue(entity as any);
+        .mockResolvedValue(createdCustomField);
 
-      expect(await service.create(createCustomFieldDto)).toStrictEqual(entity);
-
-      delete entity.values;
-
-      expect(
-        (customFieldsRepository.save as jest.Mock<any>).mock.calls[0][0],
-      ).toEqual(entity);
+      return expect(service.create(createCustomFieldDto)).resolves.toEqual(
+        createdCustomField,
+      );
     });
 
     it(`should throw DuplicatedCustomFieldException`, () => {
@@ -134,15 +108,20 @@ describe('CustomFieldsService', () => {
         DuplicatedCustomFieldException,
       );
     });
+
+    it(`should throw what is thrown by the repo`, () => {
+      jest.spyOn(customFieldsRepository, 'save').mockRejectedValue(new Error());
+
+      return expect(service.create({} as CreateCustomFieldDto)).rejects.toThrow(
+        Error,
+      );
+    });
   });
 
   describe(`update(customFieldId: number, updateCustomFieldDto: UpdateCustomFieldDto)`, () => {
-    it(`should return the updated customField`, async () => {
-      const updateCustomFieldDto: UpdateCustomFieldDto = { values: ['ok'] };
+    it(`should return the updated customField`, () => {
+      const updateCustomFieldDto: UpdateCustomFieldDto = {};
       const updatedCustomField: CustomField = {} as CustomField;
-      const entity = {
-        values: updateCustomFieldDto.values.map(v => ({ value: v })),
-      };
 
       jest
         .spyOn(customFieldsRepository, 'update')
@@ -151,12 +130,9 @@ describe('CustomFieldsService', () => {
         .spyOn(customFieldsRepository, 'findOne')
         .mockResolvedValue(updatedCustomField);
 
-      expect(await service.update(1, updateCustomFieldDto)).toEqual(
+      return expect(service.update(1, updateCustomFieldDto)).resolves.toEqual(
         updatedCustomField,
       );
-      expect(
-        (customFieldsRepository.update as jest.Mock<any>).mock.calls[0][1],
-      ).toEqual(entity);
     });
 
     it(`should throw the CustomFieldNotFoundException if a customField with the given customField id could not be found (no upsert)`, () => {
@@ -167,6 +143,14 @@ describe('CustomFieldsService', () => {
       return expect(
         service.update(1, {} as UpdateCustomFieldDto),
       ).rejects.toThrow(CustomFieldNotFoundException);
+    });
+
+    it(`should throw what is thrown by the repo`, () => {
+      jest.spyOn(customFieldsRepository, 'save').mockRejectedValue(new Error());
+
+      return expect(
+        service.update(1, {} as UpdateCustomFieldDto),
+      ).rejects.toThrow(Error);
     });
   });
 

@@ -24,32 +24,12 @@ export class CustomFieldsService {
   async create(
     createCustomFieldDto: CreateCustomFieldDto,
   ): Promise<CustomField> {
-    const { values, ...cf } = createCustomFieldDto;
-    const customField: CustomField = new CustomField();
-    let cfvs: CustomFieldValue[];
-
-    Object.assign(customField, cf);
-
-    if (Array.isArray(values)) {
-      cfvs = values.map(v => {
-        const cfv = new CustomFieldValue();
-        cfv.value = v;
-        return cfv;
-      });
-
-      customField.values = cfvs;
-    }
-
     try {
       const createdCustomField: CustomField = await this.customFieldsRepository.save(
-        customField,
+        createCustomFieldDto,
       );
 
-      if (!createdCustomField.values) {
-        createdCustomField.values = [];
-      }
-
-      return createdCustomField;
+      return this.findOne(createdCustomField.id);
     } catch (e) {
       if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
         throw new DuplicatedCustomFieldException();
@@ -74,25 +54,9 @@ export class CustomFieldsService {
     id: number,
     updateCustomFieldDto: UpdateCustomFieldDto,
   ): Promise<CustomField> {
-    const { values, ...cf } = updateCustomFieldDto;
-    const customField: CustomField = new CustomField();
-    let cfvs: CustomFieldValue[];
-
-    Object.assign(customField, cf);
-
-    if (Array.isArray(values)) {
-      cfvs = values.map(v => {
-        const cfv = new CustomFieldValue();
-        cfv.value = v;
-        return cfv;
-      });
-
-      customField.values = cfvs;
-    }
-
     const updateResult: UpdateResult = await this.customFieldsRepository.update(
       id,
-      customField,
+      updateCustomFieldDto,
     );
 
     if (updateResult.affected === 0) throw new CustomFieldNotFoundException();

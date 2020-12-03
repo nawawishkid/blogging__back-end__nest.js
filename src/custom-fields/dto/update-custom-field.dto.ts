@@ -1,9 +1,4 @@
-import {
-  IsArray,
-  isNotEmptyObject,
-  IsString,
-  ValidateIf,
-} from 'class-validator';
+import { isNotEmptyObject, IsString, ValidateIf } from 'class-validator';
 
 /**
  * Not allow empty object
@@ -21,8 +16,4 @@ export class UpdateCustomFieldDto {
   @ValidateIf(condition, option)
   @IsString()
   description?: string;
-
-  @ValidateIf(condition, option)
-  @IsArray()
-  values?: string[];
 }
