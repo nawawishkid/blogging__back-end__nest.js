@@ -1,4 +1,7 @@
-import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
+import {
+  ER_NO_REFERENCED_ROW_2,
+  ER_DUP_ENTRY,
+} from 'mysql/lib/protocol/constants/errors';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -12,6 +15,7 @@ import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
 import { DuplicatedCustomFieldValueException } from './exceptions/duplicated-custom-field-value.exception';
+import { CustomFieldNotFoundException } from '../custom-fields/exceptions/custom-field-not-found.exception';
 
 @Injectable()
 export class CustomFieldValuesService {
@@ -30,6 +34,12 @@ export class CustomFieldValuesService {
     } catch (e) {
       if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
         throw new DuplicatedCustomFieldValueException();
+
+      if (
+        e instanceof QueryFailedError &&
+        (e as any).errno === ER_NO_REFERENCED_ROW_2
+      )
+        throw new CustomFieldNotFoundException();
 
       throw e;
     }

@@ -1,4 +1,7 @@
-import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
+import {
+  ER_NO_REFERENCED_ROW_2,
+  ER_DUP_ENTRY,
+} from 'mysql/lib/protocol/constants/errors';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -8,6 +11,7 @@ import { UpdateCustomFieldValueDto } from './dto/update-custom-field-value.dto';
 import { CustomFieldValue } from './entities/custom-field-value.entity';
 import { CustomFieldValueNotFoundException } from './exceptions/custom-field-value-not-found.exception';
 import { DuplicatedCustomFieldValueException } from './exceptions/duplicated-custom-field-value.exception';
+import { CustomFieldNotFoundException } from '../custom-fields/exceptions/custom-field-not-found.exception';
 
 describe('CustomFieldValuesService', () => {
   let service: CustomFieldValuesService, repo: Repository<CustomFieldValue>;
@@ -62,6 +66,18 @@ describe('CustomFieldValuesService', () => {
       return expect(
         service.create({} as CreateCustomFieldValueDto),
       ).rejects.toThrow(DuplicatedCustomFieldValueException);
+    });
+
+    it(`should throw CustomFieldNotFoundException`, () => {
+      const error: any = new QueryFailedError('lorem', [], {});
+
+      error.errno = ER_NO_REFERENCED_ROW_2;
+
+      jest.spyOn(repo, 'save').mockRejectedValue(error);
+
+      return expect(
+        service.create({} as CreateCustomFieldValueDto),
+      ).rejects.toThrow(CustomFieldNotFoundException);
     });
   });
 
