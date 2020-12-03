@@ -91,7 +91,10 @@ export class CustomFieldsController {
       if (e instanceof CustomFieldNotFoundException)
         throw new NotFoundException();
 
-      throw new e();
+      if (e instanceof DuplicatedCustomFieldException)
+        throw new ConflictException(e);
+
+      throw e;
     }
   }
 
@@ -102,9 +105,9 @@ export class CustomFieldsController {
       await this.customFieldsService.remove(+id);
     } catch (e) {
       if (e instanceof CustomFieldNotFoundException)
-        throw new NotFoundException();
+        throw new NotFoundException(e);
 
-      throw new e();
+      throw e;
     }
   }
 

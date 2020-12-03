@@ -54,14 +54,21 @@ export class CustomFieldsService {
     id: number,
     updateCustomFieldDto: UpdateCustomFieldDto,
   ): Promise<CustomField> {
-    const updateResult: UpdateResult = await this.customFieldsRepository.update(
-      id,
-      updateCustomFieldDto,
-    );
+    try {
+      const updateResult: UpdateResult = await this.customFieldsRepository.update(
+        id,
+        updateCustomFieldDto,
+      );
 
-    if (updateResult.affected === 0) throw new CustomFieldNotFoundException();
+      if (updateResult.affected === 0) throw new CustomFieldNotFoundException();
 
-    return this.findOne(id);
+      return this.findOne(id);
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedCustomFieldException();
+
+      throw e;
+    }
   }
 
   async remove(id: number): Promise<number> {

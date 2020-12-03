@@ -78,9 +78,13 @@ describe(`Custom fields module e2e test`, () => {
 
   describe(`/custom-fields`, () => {
     describe(`POST`, () => {
-      it(`should 201:{createdCustomField:CustomField}`, () => {
-        const createCustomFieldDto: CreateCustomFieldDto = { name: 'phase' };
+      let createCustomFieldDto: CreateCustomFieldDto;
 
+      beforeEach(() => {
+        createCustomFieldDto = { name: `phase` };
+      });
+
+      it(`should 201:{createdCustomField:CustomField}`, () => {
         return sendCreateCustomFieldRequest(agent, createCustomFieldDto)
           .expect(201)
           .expect(res => {
@@ -95,37 +99,16 @@ describe(`Custom fields module e2e test`, () => {
           });
       });
 
-      it(`should 201:{createdCustomField:CustomField}`, () => {
-        const createCustomFieldDto: CreateCustomFieldDto = {
-          name: 'phase',
-          values: ['development', 'design', 'maintenance'],
-        };
+      it(`should 409`, async () => {
+        await sendCreateCustomFieldRequest(agent, createCustomFieldDto);
 
-        return sendCreateCustomFieldRequest(agent, createCustomFieldDto)
-          .expect(201)
-          .expect(res => {
-            expect(res.body.createdCustomField).toEqual(
-              expect.objectContaining<CustomField>({
-                id: expect.any(Number),
-                name: createCustomFieldDto.name,
-                values: expect.arrayContaining(
-                  createCustomFieldDto.values.map(v =>
-                    expect.objectContaining<CustomFieldValue>({
-                      id: expect.any(Number),
-                      value: v,
-                      customFieldId: res.body.createdCustomField.id,
-                      description: null,
-                    }),
-                  ),
-                ),
-                description: null,
-              }),
-            );
-          });
+        return sendCreateCustomFieldRequest(agent, createCustomFieldDto).expect(
+          409,
+        );
       });
 
       it(`should 400`, () => {
-        const createCustomFieldDto: CreateCustomFieldDto = {} as CreateCustomFieldDto;
+        delete createCustomFieldDto.name;
 
         return sendCreateCustomFieldRequest(agent, createCustomFieldDto).expect(
           400,
@@ -135,10 +118,9 @@ describe(`Custom fields module e2e test`, () => {
       it(`should 403`, () => {
         jest.spyOn(authGuard, 'canActivate').mockResolvedValue(false);
 
-        return sendCreateCustomFieldRequest(
-          agent,
-          {} as CreateCustomFieldDto,
-        ).expect(403);
+        return sendCreateCustomFieldRequest(agent, createCustomFieldDto).expect(
+          403,
+        );
       });
     });
 
@@ -231,6 +213,21 @@ describe(`Custom fields module e2e test`, () => {
               }),
             );
           });
+      });
+
+      it(`should 409`, async () => {
+        const createCustomFieldDto: CreateCustomFieldDto = { name: `lorem` };
+        const newCustomField: CustomField = await sendCreateCustomFieldRequest(
+          agent,
+          createCustomFieldDto,
+        ).then(res => res.body.createdCustomField);
+
+        updateCustomFieldDto.name = newCustomField.name;
+
+        return agent
+          .put(`/custom-fields/${createdCustomField.id}`)
+          .send(updateCustomFieldDto)
+          .expect(409);
       });
 
       it(`should 400`, () => {

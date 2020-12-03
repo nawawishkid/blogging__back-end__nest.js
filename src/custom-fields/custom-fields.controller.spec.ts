@@ -143,6 +143,16 @@ describe('CustomFieldsController', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it(`should throw ConflictException on duplicated custom field name`, () => {
+      jest
+        .spyOn(customFieldsService, 'update')
+        .mockRejectedValue(new DuplicatedCustomFieldException());
+
+      return expect(
+        controller.update('1', {} as UpdateCustomFieldDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
     it(`should throw what is thrown by the service`, () => {
       jest.spyOn(customFieldsService, 'update').mockRejectedValue(new Error());
 

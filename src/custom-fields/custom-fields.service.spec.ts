@@ -145,6 +145,18 @@ describe('CustomFieldsService', () => {
       ).rejects.toThrow(CustomFieldNotFoundException);
     });
 
+    it(`should throw DuplicatedCustomFieldException`, () => {
+      const error: any = new QueryFailedError('lorem', [], {});
+
+      error.errno = ER_DUP_ENTRY;
+
+      jest.spyOn(customFieldsRepository, 'update').mockRejectedValue(error);
+
+      return expect(
+        service.update(1, {} as UpdateCustomFieldDto),
+      ).rejects.toThrow(DuplicatedCustomFieldException);
+    });
+
     it(`should throw what is thrown by the repo`, () => {
       jest.spyOn(customFieldsRepository, 'save').mockRejectedValue(new Error());
 
