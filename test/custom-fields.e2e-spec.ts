@@ -305,6 +305,17 @@ describe(`Custom fields module e2e test`, () => {
           });
       });
 
+      it(`should 409`, async () => {
+        await agent
+          .post(`/custom-fields/${createdCustomField.id}/values`)
+          .send(createCustomFieldValueRequestBodyDto);
+
+        return agent
+          .post(`/custom-fields/${createdCustomField.id}/values`)
+          .send(createCustomFieldValueRequestBodyDto)
+          .expect(409);
+      });
+
       it(`should 400`, () => {
         delete createCustomFieldValueRequestBodyDto.value;
 
