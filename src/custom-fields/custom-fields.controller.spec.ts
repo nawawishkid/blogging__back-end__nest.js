@@ -1,8 +1,11 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
+import { DuplicatedCustomFieldValueException } from '../custom-field-values/exceptions/duplicated-custom-field-value.exception';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldsController } from './custom-fields.controller';
 import { CustomFieldsService } from './custom-fields.service';
+import { CreateCustomFieldValueRequestBodyDto } from './dto/create-custom-field-value-request-body.dto';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
 import { CustomField } from './entities/custom-field.entity';
@@ -11,7 +14,8 @@ import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-f
 
 describe('CustomFieldsController', () => {
   let controller: CustomFieldsController,
-    customFieldsService: CustomFieldsService;
+    customFieldsService: CustomFieldsService,
+    customFieldValuesService: CustomFieldValuesService;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -40,6 +44,9 @@ describe('CustomFieldsController', () => {
 
     controller = module.get<CustomFieldsController>(CustomFieldsController);
     customFieldsService = module.get<CustomFieldsService>(CustomFieldsService);
+    customFieldValuesService = module.get<CustomFieldValuesService>(
+      CustomFieldValuesService,
+    );
   });
 
   it('should be defined', () => {
@@ -179,6 +186,36 @@ describe('CustomFieldsController', () => {
         .mockRejectedValue(new CustomFieldNotFoundException());
 
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe(`createCustomFieldValue()`, () => {
+    it(`should return created custom field`, () => {
+      const createdCustomFieldValue: CustomFieldValue = {} as CustomFieldValue;
+
+      jest
+        .spyOn(customFieldValuesService, 'create')
+        .mockResolvedValue(createdCustomFieldValue);
+
+      return expect(
+        controller.createCustomFieldValue(
+          '1',
+          {} as CreateCustomFieldValueRequestBodyDto,
+        ),
+      ).resolves.toEqual({ createdCustomFieldValue });
+    });
+
+    it(`should throw ConflictException`, () => {
+      jest
+        .spyOn(customFieldValuesService, 'create')
+        .mockRejectedValue(new DuplicatedCustomFieldValueException());
+
+      return expect(
+        controller.createCustomFieldValue(
+          '1',
+          {} as CreateCustomFieldValueRequestBodyDto,
+        ),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

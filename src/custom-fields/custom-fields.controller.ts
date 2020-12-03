@@ -28,6 +28,7 @@ import { CustomFieldValue } from '../custom-field-values/entities/custom-field-v
 import { AuthGuard } from '../auth.guard';
 import { CreateCustomFieldValueRequestBodyDto } from './dto/create-custom-field-value-request-body.dto';
 import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
+import { DuplicatedCustomFieldValueException } from '../custom-field-values/exceptions/duplicated-custom-field-value.exception';
 
 @UseGuards(AuthGuard)
 @Controller('custom-fields')
@@ -119,13 +120,20 @@ export class CustomFieldsController {
     @Param(`customFieldId`) customFieldId: string,
     @Body() createCustomFieldValueDto: CreateCustomFieldValueRequestBodyDto,
   ): Promise<CreateCustomFieldValueResponseDto> {
-    const createdCustomFieldValue: CustomFieldValue = await this.customFieldValuesService.create(
-      {
-        customFieldId: +customFieldId,
-        ...createCustomFieldValueDto,
-      },
-    );
+    try {
+      const createdCustomFieldValue: CustomFieldValue = await this.customFieldValuesService.create(
+        {
+          customFieldId: +customFieldId,
+          ...createCustomFieldValueDto,
+        },
+      );
 
-    return { createdCustomFieldValue };
+      return { createdCustomFieldValue };
+    } catch (e) {
+      if (e instanceof DuplicatedCustomFieldValueException)
+        throw new ConflictException(e);
+
+      throw e;
+    }
   }
 }
