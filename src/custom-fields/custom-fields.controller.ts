@@ -9,6 +9,7 @@ import {
   NotFoundException,
   HttpCode,
   UseGuards,
+  ConflictException,
 } from '@nestjs/common';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
@@ -26,6 +27,7 @@ import { CustomFieldValuesService } from '../custom-field-values/custom-field-va
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
 import { AuthGuard } from '../auth.guard';
 import { CreateCustomFieldValueRequestBodyDto } from './dto/create-custom-field-value-request-body.dto';
+import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
 
 @UseGuards(AuthGuard)
 @Controller('custom-fields')
@@ -39,11 +41,18 @@ export class CustomFieldsController {
   async create(
     @Body() createCustomFieldDto: CreateCustomFieldDto,
   ): Promise<CreateCustomFieldResponseDto> {
-    const createdCustomField: CustomField = await this.customFieldsService.create(
-      createCustomFieldDto,
-    );
+    try {
+      const createdCustomField: CustomField = await this.customFieldsService.create(
+        createCustomFieldDto,
+      );
 
-    return { createdCustomField };
+      return { createdCustomField };
+    } catch (e) {
+      if (e instanceof DuplicatedCustomFieldException)
+        throw new ConflictException(e);
+
+      throw e;
+    }
   }
 
   @Get()

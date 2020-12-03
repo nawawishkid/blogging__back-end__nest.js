@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomFieldValuesService } from '../custom-field-values/custom-field-values.service';
 import { CustomFieldsController } from './custom-fields.controller';
@@ -7,6 +7,7 @@ import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
 import { CustomField } from './entities/custom-field.entity';
 import { CustomFieldNotFoundException } from './exceptions/custom-field-not-found.exception';
+import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
 
 describe('CustomFieldsController', () => {
   let controller: CustomFieldsController,
@@ -98,6 +99,16 @@ describe('CustomFieldsController', () => {
       ).resolves.toEqual({
         createdCustomField,
       });
+    });
+
+    it(`should throw ConflictException on duplicated custom field name`, () => {
+      jest
+        .spyOn(customFieldsService, 'create')
+        .mockRejectedValue(new DuplicatedCustomFieldException());
+
+      return expect(
+        controller.create({} as CreateCustomFieldDto),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
