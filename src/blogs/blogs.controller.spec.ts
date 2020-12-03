@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
 import { User } from 'src/users/entities/user.entity';
@@ -9,6 +13,7 @@ import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 describe('BlogsController', () => {
   let controller: BlogsController, blogsService: BlogsService;
@@ -120,6 +125,21 @@ describe('BlogsController', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it(`should throw ConflictException`, () => {
+      const createBlogRequestDto: CreateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 1],
+      };
+
+      jest
+        .spyOn(blogsService, 'create')
+        .mockRejectedValue(new DuplicatedBlogCustomFieldException());
+
+      return expect(
+        controller.create({} as User, createBlogRequestDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
     it(`should throw what is thrown by the blogs service`, () => {
       const error = new Error();
 
@@ -165,6 +185,21 @@ describe('BlogsController', () => {
       return expect(
         controller.update('id', updateBlogRequestDto),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw ConflictException`, () => {
+      const updateBlogRequestDto: UpdateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 1],
+      };
+
+      jest
+        .spyOn(blogsService, 'update')
+        .mockRejectedValue(new DuplicatedBlogCustomFieldException());
+
+      return expect(
+        controller.update('id', updateBlogRequestDto),
+      ).rejects.toThrow(ConflictException);
     });
 
     it(`should throw what is thrown by the blogs service`, () => {

@@ -176,8 +176,14 @@ describe(`Blogs controller`, () => {
             });
         });
 
-        it(`should 400 on giving duplicated custom field value ids`, async () => {
+        it(`should 409 on giving duplicated custom field value ids`, async () => {
           createBlogDto.customFieldValueIds = [1, 2, 1];
+
+          await sendCreateBlogRequest(agent, createBlogDto).expect(409);
+        });
+
+        it(`should 400 on giving at least one unknown custom field value id`, async () => {
+          createBlogDto.customFieldValueIds = [1, 2, 1000];
 
           await sendCreateBlogRequest(agent, createBlogDto).expect(400);
         });
@@ -332,6 +338,76 @@ describe(`Blogs controller`, () => {
           .put(`/blogs/${createdBlog.id}`)
           .send(updateBlogDto)
           .expect(403);
+      });
+
+      describe(`with custom fields`, () => {
+        const customFieldTableName = TABLE_PREFIX + 'custom_field';
+        const customFieldValueTableName = TABLE_PREFIX + 'custom_field_value';
+
+        beforeEach(async () => {
+          await connection.query(`DELETE FROM ${customFieldTableName}`);
+          await connection.query(`DELETE FROM ${customFieldValueTableName}`);
+          await connection.query(
+            `ALTER TABLE ${customFieldTableName} AUTO_INCREMENT = 1`,
+          );
+          await connection.query(
+            `ALTER TABLE ${customFieldValueTableName} AUTO_INCREMENT = 1`,
+          );
+
+          await connection.query(
+            `INSERT INTO ${customFieldTableName} (name) VALUES ('phase')`,
+          );
+          await connection.query(
+            `INSERT INTO ${customFieldValueTableName} (value, customFieldId) VALUES ('design', 1), ('development', 1)`,
+          );
+        });
+
+        it(`should 201:{updatedBlog:Blog}`, async () => {
+          updateBlogDto.customFieldValueIds = [1, 2];
+
+          return agent
+            .put(`/blogs/${createdBlog.id}`)
+            .send(updateBlogDto)
+            .expect(200)
+            .expect(res => {
+              expect(res.body.updatedBlog).toEqual<Blog>({
+                id: expect.any(String),
+                coverImage: null,
+                body: null,
+                excerpt: null,
+                createdAt: expect.any(String),
+                updatedAt: expect.any(String),
+                metadata: null,
+                /**
+                 * @TODO Make it return { ...customFieldEntity, value: CustomFieldValue }
+                 */
+                blogCustomFields: [
+                  { blogId: res.body.updatedBlog.id, customFieldValueId: 1 },
+                  { blogId: res.body.updatedBlog.id, customFieldValueId: 2 },
+                ],
+                author: expect.any(Object),
+                title: updateBlogDto.title,
+              });
+            });
+        });
+
+        it(`should 409 on giving duplicated custom field value ids`, async () => {
+          updateBlogDto.customFieldValueIds = [1, 2, 1];
+
+          await agent
+            .put(`/blogs/${createdBlog.id}`)
+            .send(updateBlogDto)
+            .expect(409);
+        });
+
+        it(`should 400 on giving at least one unknown custom field value id`, async () => {
+          updateBlogDto.customFieldValueIds = [1, 2, 1000];
+
+          await agent
+            .put(`/blogs/${createdBlog.id}`)
+            .send(updateBlogDto)
+            .expect(400);
+        });
       });
     });
 

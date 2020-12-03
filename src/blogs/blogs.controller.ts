@@ -10,6 +10,7 @@ import {
   HttpCode,
   UseGuards,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth.guard';
 import { User as UserEntity } from '../users/entities/user.entity';
@@ -49,10 +50,10 @@ export class BlogsController {
 
       return { createdBlog };
     } catch (e) {
-      if (
-        e instanceof DuplicatedBlogCustomFieldException ||
-        e instanceof CustomFieldValueNotFoundException
-      )
+      if (e instanceof DuplicatedBlogCustomFieldException)
+        throw new ConflictException(e);
+
+      if (e instanceof CustomFieldValueNotFoundException)
         throw new BadRequestException(e);
 
       throw e;
@@ -92,7 +93,7 @@ export class BlogsController {
     } catch (e) {
       if (e instanceof BlogNotFoundException) throw new NotFoundException(e);
       if (e instanceof DuplicatedBlogCustomFieldException)
-        throw new BadRequestException(e);
+        throw new ConflictException(e);
       if (e instanceof CustomFieldValueNotFoundException)
         throw new BadRequestException(e);
 
