@@ -144,4 +144,13 @@ export class BlogsService {
 
     return id;
   }
+
+  async search(keyword: string): Promise<Blog[]> {
+    const foundBlogs: Blog[] = await this.blogsRepository
+      .createQueryBuilder(`blog`)
+      .where(`blog.title like :keyword`, { keyword })
+      .getMany();
+
+    return foundBlogs;
+  }
 }

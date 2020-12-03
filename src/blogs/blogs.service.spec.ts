@@ -39,6 +39,7 @@ describe('BlogsService', () => {
             findOne: jest.fn(),
             delete: jest.fn(),
             update: jest.fn(),
+            createQueryBuilder: jest.fn(),
           },
         },
         {
@@ -334,6 +335,27 @@ describe('BlogsService', () => {
       return expect(service.remove('hahaha')).rejects.toThrow(
         BlogNotFoundException,
       );
+    });
+  });
+
+  describe(`search(keyword:string)`, () => {
+    it(`should return an array of found blogs`, async () => {
+      const keyword: string = 'keyword';
+      const foundBlogs: Blog[] = [{}, {}] as Blog[];
+      const queryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(foundBlogs),
+      };
+
+      jest
+        .spyOn(blogsRepository, 'createQueryBuilder')
+        .mockReturnValue(queryBuilder as any);
+
+      await expect(service.search(keyword)).resolves.toEqual(foundBlogs);
+
+      expect(queryBuilder.where).toHaveBeenCalledWith(expect.any(String), {
+        keyword,
+      });
     });
   });
 });
