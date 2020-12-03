@@ -49,7 +49,10 @@ export async function bootstrap(app: NestExpressApplication) {
     app.useGlobalInterceptors({
       intercept(ctx, next) {
         const meta = { namespace: `Interceptor:AppInterceptor` };
-        const handler = () => logger.verbose(`End of intercept`, meta);
+        const handler = v => {
+          logger.debug(`data:`, { ...meta, json: v });
+          logger.verbose(`End of intercept`, meta);
+        };
         logger.verbose(`intercept()`, meta);
         logger.debug(`Processing the request...`, meta);
 
