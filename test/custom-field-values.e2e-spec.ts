@@ -163,6 +163,15 @@ describe(`Custom field values module e2e test`, () => {
           });
       });
 
+      it(`should 409`, async () => {
+        updateCustomFieldValueDto.value = createdCustomField.values[1].value;
+
+        return agent
+          .put(`/custom-field-values/${createdCustomField.values[0].id}`)
+          .send(updateCustomFieldValueDto)
+          .expect(409);
+      });
+
       it(`should 400`, () => {
         return agent
           .put(`/custom-field-values/${createdCustomField.values[0].id}`)
