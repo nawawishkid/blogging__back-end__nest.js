@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
 import { DuplicatedCustomFieldValueException } from '../custom-field-values/exceptions/duplicated-custom-field-value.exception';
@@ -216,6 +220,19 @@ describe('CustomFieldsController', () => {
           {} as CreateCustomFieldValueRequestBodyDto,
         ),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it(`should throw BadRequestException on receiving unknown custom field id`, () => {
+      jest
+        .spyOn(customFieldValuesService, 'create')
+        .mockRejectedValue(new CustomFieldNotFoundException());
+
+      return expect(
+        controller.createCustomFieldValue(
+          '1',
+          {} as CreateCustomFieldValueRequestBodyDto,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -10,6 +10,7 @@ import {
   HttpCode,
   UseGuards,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
@@ -132,6 +133,9 @@ export class CustomFieldsController {
     } catch (e) {
       if (e instanceof DuplicatedCustomFieldValueException)
         throw new ConflictException(e);
+
+      if (e instanceof CustomFieldNotFoundException)
+        throw new BadRequestException(e);
 
       throw e;
     }
