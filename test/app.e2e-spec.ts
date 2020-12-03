@@ -18,6 +18,10 @@ import { Blog } from 'src/blogs/entities/blog.entity';
 import { UpdateBlogRequestBodyDto } from 'src/blogs/dto/update-blog-request-body.dto';
 import { CreateCustomFieldDto } from 'src/custom-fields/dto/create-custom-field.dto';
 import { CustomField } from 'src/custom-fields/entities/custom-field.entity';
+import { resolve } from 'path';
+import { File } from 'src/files/entities/file.entity';
+import { CreateCustomFieldValueRequestBodyDto } from 'src/custom-fields/dto/create-custom-field-value-request-body.dto';
+import { CustomFieldValue } from 'src/custom-field-values/entities/custom-field-value.entity';
 
 const TABLE_PREFIX = `appe2e_`;
 
@@ -153,94 +157,118 @@ describe(`Application e2e tests`, () => {
 
       afterEach(() => logout(createdSession.id));
 
-      describe(`Create a blog -> get all blogs -> get the blog -> update the blog -> remove the blog`, () => {
-        it(``, async () => {
-          const createBlogDto: CreateBlogRequestBodyDto = {
-            title: `Hello, world!`,
-          };
-          const createdBlog: Blog = await createBlog(createBlogDto)
-            .expect(201)
-            .then(res => res.body.createdBlog);
-          const updateBlogDto: UpdateBlogRequestBodyDto = { title: 'ok' };
+      it(`Create a blog -> get all blogs -> get the blog -> update the blog -> remove the blog`, async () => {
+        const createBlogDto: CreateBlogRequestBodyDto = {
+          title: `Hello, world!`,
+        };
+        const createdBlog: Blog = await createBlog(createBlogDto)
+          .expect(201)
+          .then(res => res.body.createdBlog);
+        const updateBlogDto: UpdateBlogRequestBodyDto = { title: 'ok' };
 
-          await agent
-            .get(`/blogs`)
-            .expect(200)
-            .expect(res => {
-              expect(res.body.blogs.length).toEqual(1);
+        await agent
+          .get(`/blogs`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.blogs.length).toEqual(1);
+          });
+        await agent.get(`/blogs/${createdBlog.id}`).expect(200);
+        await agent
+          .put(`/blogs/${createdBlog.id}`)
+          .send(updateBlogDto)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.updatedBlog).toStrictEqual({
+              ...createdBlog,
+              ...updateBlogDto,
+              updatedAt: expect.any(String),
             });
-          await agent.get(`/blogs/${createdBlog.id}`).expect(200);
-          await agent
-            .put(`/blogs/${createdBlog.id}`)
-            .send(updateBlogDto)
-            .expect(200)
-            .expect(res => {
-              expect(res.body.updatedBlog).toStrictEqual({
-                ...createdBlog,
-                ...updateBlogDto,
-                updatedAt: expect.any(String),
-              });
-            });
-          await agent.delete(`/blogs/${createdBlog.id}`).expect(204);
-        });
+          });
+        await agent.delete(`/blogs/${createdBlog.id}`).expect(204);
       });
 
-      describe(`Create more sessions -> get all sessions -> remove all other sessions`, () => {
-        it(``, async () => {
-          const sessionsQty = 10;
+      it(`Create more sessions -> get all sessions -> remove all other sessions`, async () => {
+        const sessionsQty = 10;
 
-          const createdSessions = await Promise.all(
-            Array(sessionsQty)
-              .fill(null)
-              .map(() => {
-                const newAgent = supertest.agent(app.getHttpServer());
+        const createdSessions = await Promise.all(
+          Array(sessionsQty)
+            .fill(null)
+            .map(() => {
+              const newAgent = supertest.agent(app.getHttpServer());
 
-                return createSession(createSessionDto, newAgent).then(
-                  res => res.body.createdSession,
-                );
+              return createSession(createSessionDto, newAgent).then(
+                res => res.body.createdSession,
+              );
+            }),
+        );
+
+        await agent
+          .get(`/sessions`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.sessions.length).toEqual(sessionsQty + 1);
+          });
+        await Promise.all(
+          createdSessions.map(cs =>
+            agent.delete(`/sessions/${cs.id}`).expect(204),
+          ),
+        );
+      });
+
+      it(`Upload an image -> Create a blog -> add a custom field -> add custom field values -> add the custom field to the blog`, async () => {
+        const createdFile: File = await agent
+          .post(`/files`)
+          .attach(
+            `file`,
+            resolve(`test/fixtures/ben-awad-twitter-screenshot.png`),
+          )
+          .expect(201)
+          .then(res => res.body.createdFile);
+        const createBlogDto: CreateBlogRequestBodyDto = {
+          title: `How to how to`,
+          coverImage: createdFile.path,
+        };
+        const createdBlog: Blog = await createBlog(createBlogDto)
+          .expect(201)
+          .expect(res => {
+            expect(res.body.createdBlog).toEqual(
+              expect.objectContaining<Partial<Blog>>({
+                coverImage: createdFile.path,
               }),
-          );
+            );
+          })
+          .then(res => res.body.createdBlog);
+        const createCustomFieldDto: CreateCustomFieldDto = {
+          name: `phase`,
+        };
+        const createdCustomField: CustomField = await agent
+          .post(`/custom-fields`)
+          .send(createCustomFieldDto)
+          .expect(201)
+          .then(res => res.body.createdCustomField);
+        const createCustomFieldValueDtos: CreateCustomFieldValueRequestBodyDto[] = [
+          {
+            value: `design`,
+          },
+          { value: `development` },
+        ];
+        const createdCustomFieldValues: CustomFieldValue[] = await Promise.all(
+          createCustomFieldValueDtos.map(dto =>
+            agent
+              .post(`/custom-fields/${createdCustomField.id}/values`)
+              .send(dto)
+              .expect(201)
+              .then(res => res.body.createdCustomFieldValue),
+          ),
+        );
+        const updateBlogRequestBodyDto: UpdateBlogRequestBodyDto = {
+          customFieldValueIds: createdCustomFieldValues.map(cfv => cfv.id),
+        };
 
-          await agent
-            .get(`/sessions`)
-            .expect(200)
-            .expect(res => {
-              expect(res.body.sessions.length).toEqual(sessionsQty + 1);
-            });
-          await Promise.all(
-            createdSessions.map(cs =>
-              agent.delete(`/sessions/${cs.id}`).expect(204),
-            ),
-          );
-        });
-      });
-
-      describe(`Create a blog -> add a custom field -> add custom field values -> add the custom field to the blog`, () => {
-        it(``, async () => {
-          const createBlogDto: CreateBlogRequestBodyDto = {
-            title: `How to how to`,
-          };
-          const createdBlog: Blog = await createBlog(createBlogDto)
-            .expect(201)
-            .then(res => res.body.createdBlog);
-          const createCustomFieldDto: CreateCustomFieldDto = {
-            name: `phase`,
-            values: [`design`, `development`],
-          };
-          const createdCustomField: CustomField = await agent
-            .post(`/custom-fields`)
-            .send(createCustomFieldDto)
-            .expect(201)
-            .then(res => res.body.createdCustomField);
-          const updateBlogRequestBodyDto: UpdateBlogRequestBodyDto = {
-            customFieldValueIds: createdCustomField.values.map(v => v.id),
-          };
-
-          await agent
-            .put(`/blogs/${createdBlog.id}`)
-            .send(updateBlogRequestBodyDto)
-            .expect(200);
-        });
+        await agent
+          .put(`/blogs/${createdBlog.id}`)
+          .send(updateBlogRequestBodyDto)
+          .expect(200);
       });
     });
   });
