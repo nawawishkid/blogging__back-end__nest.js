@@ -32,6 +32,7 @@ describe('BlogsController', () => {
             remove: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            search: jest.fn(),
           },
         },
       ],
@@ -54,6 +55,19 @@ describe('BlogsController', () => {
       return expect(controller.findAll({} as User)).resolves.toEqual({
         blogs: foundBlogs,
       });
+    });
+
+    it(`should return all blogs found by given keyword`, async () => {
+      const keyword = 'keyword';
+      const foundBlogs: Blog[] = [{}, {}] as Blog[];
+
+      jest.spyOn(blogsService, 'search').mockResolvedValue(foundBlogs);
+      jest.spyOn(blogsService, 'findByAuthorId');
+
+      expect(await controller.findAll({} as User, keyword)).toEqual({
+        blogs: foundBlogs,
+      });
+      expect(blogsService.findByAuthorId).not.toHaveBeenCalled();
     });
 
     it(`should throw NotFoundException if the given user has no blogs`, () => {

@@ -72,6 +72,7 @@ describe(`Blogs controller`, () => {
     // const torm = module.get<TypeOrmModuleOptions>(TYPEORM_MODULE_OPTIONS)
     authGuard = module.get<AuthGuard>(AuthGuard);
     logger = module.get<Logger>(WINSTON_MODULE_PROVIDER);
+    logger.level = `error`;
     logger.silent = true;
     ur = module.get<Repository<User>>(getRepositoryToken(User));
 
@@ -233,6 +234,33 @@ describe(`Blogs controller`, () => {
               ]),
             );
           });
+      });
+
+      it(`should 200:{blogs:Blog[]} on searching with keyword`, async () => {
+        const keyword = 'lorem';
+        const blogTitles: string[] = [
+          `ipsum`,
+          `${keyword} ipsum`,
+          `ipsuM${keyword}`,
+          `nononono`,
+          `okokok`,
+          `okok${keyword}nooknook`,
+        ];
+
+        await connection.query(
+          `INSERT INTO ${TABLE_PREFIX}blog (id, authorId, title) VALUES ${blogTitles
+            .map((t, idx) => `('${Date.now()}-${t}', ${user.id}, ?)`)
+            .join(',')}`,
+          blogTitles,
+        );
+
+        await agent
+          .get(`/blogs?keyword=${keyword}`)
+          .expect(200)
+          .expect(res => {
+            expect(res.body.blogs.length).toEqual(3);
+          });
+        await agent.get(`/blogs?keyword=notfound`).expect(200, { blogs: [] });
       });
 
       it(`should 404`, () => {

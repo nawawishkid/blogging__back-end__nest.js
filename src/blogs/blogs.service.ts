@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'lodash';
 import {
   ER_NO_REFERENCED_ROW_2,
   ER_DUP_ENTRY,
@@ -148,7 +149,9 @@ export class BlogsService {
   async search(keyword: string): Promise<Blog[]> {
     const foundBlogs: Blog[] = await this.blogsRepository
       .createQueryBuilder(`blog`)
-      .where(`blog.title like :keyword`, { keyword })
+      .where(`blog.title RLIKE :keyword`, {
+        keyword: `^.*${escapeRegExp(keyword)}.*$`,
+      })
       .getMany();
 
     return foundBlogs;

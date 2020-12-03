@@ -11,6 +11,7 @@ import {
   UseGuards,
   BadRequestException,
   ConflictException,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth.guard';
 import { User as UserEntity } from '../users/entities/user.entity';
@@ -61,8 +62,13 @@ export class BlogsController {
   }
 
   @Get()
-  async findAll(@User() user: UserEntity): Promise<FindAllBlogsResponseDto> {
-    const foundBlogs: Blog[] = await this.blogsService.findByAuthorId(user.id);
+  async findAll(
+    @User() user: UserEntity,
+    @Query(`keyword`) keyword?: string,
+  ): Promise<FindAllBlogsResponseDto> {
+    const foundBlogs: Blog[] = keyword
+      ? await this.blogsService.search(keyword)
+      : await this.blogsService.findByAuthorId(user.id);
 
     if (!foundBlogs) throw new NotFoundException();
 

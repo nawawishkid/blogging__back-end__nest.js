@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'lodash';
 import {
   ER_NO_REFERENCED_ROW_2,
   ER_DUP_ENTRY,
@@ -354,7 +355,7 @@ describe('BlogsService', () => {
       await expect(service.search(keyword)).resolves.toEqual(foundBlogs);
 
       expect(queryBuilder.where).toHaveBeenCalledWith(expect.any(String), {
-        keyword,
+        keyword: `^.*${escapeRegExp(keyword)}.*$`,
       });
     });
   });
