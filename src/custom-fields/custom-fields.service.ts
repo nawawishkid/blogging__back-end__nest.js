@@ -1,11 +1,18 @@
+import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import {
+  DeleteResult,
+  QueryFailedError,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
 import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
 import { CustomField } from './entities/custom-field.entity';
 import { CustomFieldNotFoundException } from './exceptions/custom-field-not-found.exception';
+import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
 
 @Injectable()
 export class CustomFieldsService {
@@ -33,15 +40,22 @@ export class CustomFieldsService {
       customField.values = cfvs;
     }
 
-    const createdCustomField: CustomField = await this.customFieldsRepository.save(
-      customField,
-    );
+    try {
+      const createdCustomField: CustomField = await this.customFieldsRepository.save(
+        customField,
+      );
 
-    if (!createdCustomField.values) {
-      createdCustomField.values = [];
+      if (!createdCustomField.values) {
+        createdCustomField.values = [];
+      }
+
+      return createdCustomField;
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedCustomFieldException();
+
+      throw e;
     }
-
-    return createdCustomField;
   }
 
   findAll(): Promise<CustomField[]> {

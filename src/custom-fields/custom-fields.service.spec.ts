@@ -1,11 +1,13 @@
+import { ER_DUP_ENTRY } from 'mysql/lib/protocol/constants/errors';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { CustomFieldsService } from './custom-fields.service';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
 import { CustomField } from './entities/custom-field.entity';
 import { CustomFieldNotFoundException } from './exceptions/custom-field-not-found.exception';
+import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
 
 describe('CustomFieldsService', () => {
   let service: CustomFieldsService,
@@ -119,6 +121,18 @@ describe('CustomFieldsService', () => {
       expect(
         (customFieldsRepository.save as jest.Mock<any>).mock.calls[0][0],
       ).toEqual(entity);
+    });
+
+    it(`should throw DuplicatedCustomFieldException`, () => {
+      const error: any = new QueryFailedError('lorem', [], {});
+
+      error.errno = ER_DUP_ENTRY;
+
+      jest.spyOn(customFieldsRepository, 'save').mockRejectedValue(error);
+
+      return expect(service.create({} as CreateCustomFieldDto)).rejects.toThrow(
+        DuplicatedCustomFieldException,
+      );
     });
   });
 

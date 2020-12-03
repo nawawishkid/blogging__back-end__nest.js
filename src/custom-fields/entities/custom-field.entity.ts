@@ -6,7 +6,7 @@ export class CustomField {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ unique: true })
   name: string;
 
   @Column('text', { nullable: true })
