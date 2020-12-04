@@ -79,11 +79,9 @@ describe(`Application e2e tests`, () => {
     logger.silent = true;
     connection = getConnection();
 
-    await Promise.all(
-      connection.entityMetadatas.map(meta =>
-        connection.query(`DELETE FROM ${meta.tableName}`),
-      ),
-    );
+    for (let meta of connection.entityMetadatas) {
+      await connection.query(`DELETE FROM ${meta.tableName}`);
+    }
 
     app = module.createNestApplication();
     app = await bootstrap(app);
