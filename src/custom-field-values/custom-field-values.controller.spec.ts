@@ -105,6 +105,16 @@ describe('CustomFieldValuesController', () => {
         controller.update('1', {} as UpdateCustomFieldValueDto),
       ).rejects.toThrow(ConflictException);
     });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(service, 'update').mockRejectedValue(error);
+
+      return expect(
+        controller.update('1', {} as UpdateCustomFieldValueDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe(`remove(id: string)`, () => {
@@ -123,5 +133,13 @@ describe('CustomFieldValuesController', () => {
 
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
     });
+  });
+
+  it(`should throw what is thrown by the service`, () => {
+    const error = new Error();
+
+    jest.spyOn(service, 'remove').mockRejectedValue(error);
+
+    return expect(controller.remove('1')).rejects.toThrow(error);
   });
 });

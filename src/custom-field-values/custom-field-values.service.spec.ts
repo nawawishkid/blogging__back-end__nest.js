@@ -79,6 +79,16 @@ describe('CustomFieldValuesService', () => {
         service.create({} as CreateCustomFieldValueDto),
       ).rejects.toThrow(CustomFieldNotFoundException);
     });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(repo, 'save').mockRejectedValue(error);
+
+      return expect(
+        service.create({} as CreateCustomFieldValueDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe(`findAll()`, () => {
@@ -132,6 +142,28 @@ describe('CustomFieldValuesService', () => {
         service.update(1, {} as UpdateCustomFieldValueDto),
       ).rejects.toThrow(CustomFieldValueNotFoundException);
     });
+
+    it(`should throw DuplicatedCustomFieldValueException`, () => {
+      const error: any = new QueryFailedError('lorem', [], {});
+
+      error.errno = ER_DUP_ENTRY;
+
+      jest.spyOn(repo, 'update').mockRejectedValue(error);
+
+      return expect(
+        service.update(1, {} as UpdateCustomFieldValueDto),
+      ).rejects.toThrow(DuplicatedCustomFieldValueException);
+    });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(repo, 'update').mockRejectedValue(error);
+
+      return expect(
+        service.update(1, {} as UpdateCustomFieldValueDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe(`remove(id: number)`, () => {
@@ -149,6 +181,14 @@ describe('CustomFieldValuesService', () => {
       return expect(service.remove(1)).rejects.toThrow(
         CustomFieldValueNotFoundException,
       );
+    });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(repo, 'delete').mockRejectedValue(error);
+
+      return expect(service.remove(1)).rejects.toThrow(error);
     });
   });
 });
