@@ -341,7 +341,7 @@ describe('BlogsService', () => {
 
   describe(`search(keyword:string)`, () => {
     it(`should return an array of found blogs`, async () => {
-      const keyword: string = 'keyword';
+      const keyword = 'keyword';
       const foundBlogs: Blog[] = [{}, {}] as Blog[];
       const queryBuilder = {
         where: jest.fn().mockReturnThis(),
