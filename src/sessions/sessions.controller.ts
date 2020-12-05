@@ -122,7 +122,7 @@ export class SessionsController {
     } catch (e) {
       if (e instanceof SessionNotFoundException) throw new NotFoundException();
 
-      throw new e();
+      throw e;
     }
   }
 }
