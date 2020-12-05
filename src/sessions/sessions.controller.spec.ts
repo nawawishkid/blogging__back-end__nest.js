@@ -203,6 +203,21 @@ describe('SessionsController', () => {
         ),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(sessionsService, 'update').mockRejectedValue(error);
+
+      return expect(
+        controller.update(
+          '1',
+          {} as User,
+          {} as ExpressSessionDataDto,
+          {} as UpdateSessionDto,
+        ),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe('remove()', () => {
@@ -216,6 +231,14 @@ describe('SessionsController', () => {
         .mockRejectedValue(new SessionNotFoundException());
 
       await expect(controller.remove('1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw what is thrown by the service', async () => {
+      const error = new Error();
+
+      jest.spyOn(sessionsService, 'remove').mockRejectedValue(error);
+
+      await expect(controller.remove('1')).rejects.toThrow(error);
     });
   });
 });
