@@ -79,7 +79,7 @@ describe(`Application e2e tests`, () => {
     logger.silent = true;
     connection = getConnection();
 
-    for (let meta of connection.entityMetadatas) {
+    for (const meta of connection.entityMetadatas) {
       await connection.query(`DELETE FROM ${meta.tableName}`);
     }
 
