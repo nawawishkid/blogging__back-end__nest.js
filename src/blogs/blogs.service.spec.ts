@@ -228,7 +228,6 @@ describe('BlogsService', () => {
 
     it(`should return updated blog`, () => {
       const updateBlogDto = {} as UpdateBlogDto;
-      const updatedBlog = {} as Blog;
 
       jest
         .spyOn(blogsRepository, 'update')

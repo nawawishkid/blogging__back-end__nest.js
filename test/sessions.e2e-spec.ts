@@ -26,7 +26,6 @@ const sendCreateSessionRequest = (
 describe(`Session controller`, () => {
   let app: NestExpressApplication,
     agent: request.SuperAgentTest,
-    authService: AuthService,
     ur: Repository<User>,
     createdUser: User,
     logger: Logger;
@@ -64,7 +63,6 @@ describe(`Session controller`, () => {
       })
       .compile();
 
-    authService = moduleFixture.get<AuthService>(AuthService);
     ur = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
 
     await ur.query(`DELETE FROM ${ur.metadata.tableName}`);

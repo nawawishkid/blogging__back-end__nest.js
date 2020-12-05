@@ -249,7 +249,7 @@ describe(`Blogs controller`, () => {
 
         await connection.query(
           `INSERT INTO ${TABLE_PREFIX}blog (id, authorId, title) VALUES ${blogTitles
-            .map((t, idx) => `('${Date.now()}-${t}', ${user.id}, ?)`)
+            .map(t => `('${Date.now()}-${t}', ${user.id}, ?)`)
             .join(',')}`,
           blogTitles,
         );

@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
-import { CustomFieldValue } from '../custom-field-values/entities/custom-field-value.entity';
 import { CustomField } from './entities/custom-field.entity';
 import { CustomFieldNotFoundException } from './exceptions/custom-field-not-found.exception';
 import { DuplicatedCustomFieldException } from './exceptions/duplicated-custom-field.exception';
