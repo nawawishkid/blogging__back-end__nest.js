@@ -202,6 +202,20 @@ describe('SessionsService', () => {
       ).resolves.toEqual(updatedSession);
     });
 
+    it(`should set data object in the dto on session object`, async () => {
+      const updateSessionDto: UpdateSessionDto = { data: { a: 1, b: 2 } };
+
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
+
+      await service.update('id', sessionData, updateSessionDto);
+
+      expect(sessionData).toEqual(
+        expect.objectContaining(updateSessionDto.data),
+      );
+    });
+
     it(`should throw SessionNotFoundException`, () => {
       jest
         .spyOn(sessionsRepository, 'update')
