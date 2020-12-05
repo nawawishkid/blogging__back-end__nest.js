@@ -1,8 +1,4 @@
-import {
-  ArgumentsHost,
-  HttpException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ArgumentsHost, NotFoundException } from '@nestjs/common';
 import * as httpExceptionsModule from '@nestjs/common/exceptions';
 import { HttpArgumentsHost } from '@nestjs/common/interfaces';
 import { Test } from '@nestjs/testing';
