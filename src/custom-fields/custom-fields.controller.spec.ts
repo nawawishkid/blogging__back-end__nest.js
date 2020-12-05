@@ -191,6 +191,14 @@ describe('CustomFieldsController', () => {
 
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
     });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(customFieldsService, 'remove').mockRejectedValue(error);
+
+      return expect(controller.remove('1')).rejects.toThrow(error);
+    });
   });
 
   describe(`createCustomFieldValue()`, () => {
@@ -233,6 +241,19 @@ describe('CustomFieldsController', () => {
           {} as CreateCustomFieldValueRequestBodyDto,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw what is thrown by the service`, () => {
+      const error = new Error();
+
+      jest.spyOn(customFieldValuesService, 'create').mockRejectedValue(error);
+
+      return expect(
+        controller.createCustomFieldValue(
+          '1',
+          {} as CreateCustomFieldValueRequestBodyDto,
+        ),
+      ).rejects.toThrow(error);
     });
   });
 });
