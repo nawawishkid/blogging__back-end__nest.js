@@ -12,20 +12,6 @@ import { UsersService } from './users.service';
 
 jest.mock('bcrypt');
 
-class QueryBuilder {
-  where(conditionString: string, option: User) {
-    return this;
-  }
-
-  addSelect() {
-    return this;
-  }
-
-  getOne(): Promise<any> {
-    return Promise.resolve('ok');
-  }
-}
-
 describe('UsersService', () => {
   let usersService: UsersService, usersRepository: Repository<User>;
 
@@ -70,16 +56,15 @@ describe('UsersService', () => {
       const email = 'email@gmail.com';
       const users = { 'a@abc.co': {}, [email]: {} };
 
-      const queryBuilder = new QueryBuilder();
-
-      jest
-        .spyOn(queryBuilder, 'where')
-        .mockImplementation((conditionString, option) => {
+      const queryBuilder = {
+        where: jest.fn(function(_, option) {
           receivedCondition = option;
+          return this;
+        }),
+        addSelect: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(users[email]),
+      };
 
-          return queryBuilder;
-        });
-      jest.spyOn(queryBuilder, 'getOne').mockResolvedValue(users[email]);
       jest
         .spyOn(usersRepository, 'createQueryBuilder')
         .mockReturnValue(queryBuilder as any);
