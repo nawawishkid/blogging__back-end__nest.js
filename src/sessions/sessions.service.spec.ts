@@ -183,9 +183,34 @@ describe('SessionsService', () => {
   });
 
   describe(`update()`, () => {
-    it(`should return updated session`, () => {});
+    let sessionData: SessionData;
 
-    it(`should throw SessionNotFoundException`, () => {});
+    beforeEach(() => {
+      sessionData = { cookie: { expires: new Date() } } as SessionData;
+    });
+
+    it(`should return updated session`, () => {
+      const updatedSession: Session = {} as Session;
+
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(updatedSession);
+
+      return expect(
+        service.update('id', sessionData, {} as UpdateSessionDto),
+      ).resolves.toEqual(updatedSession);
+    });
+
+    it(`should throw SessionNotFoundException`, () => {
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 0 } as any);
+
+      return expect(
+        service.update('id', sessionData, {} as UpdateSessionDto),
+      ).rejects.toThrow(SessionNotFoundException);
+    });
   });
 
   describe('remove()', () => {
