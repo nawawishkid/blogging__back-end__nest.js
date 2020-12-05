@@ -307,10 +307,21 @@ describe('BlogsService', () => {
       );
     });
 
-    it(`should throw what blog custom fields repository throws`, () => {
+    it(`should throw what blog repository throws`, () => {
       const error = new Error();
 
       jest.spyOn(blogsRepository, 'update').mockRejectedValue(error);
+
+      return expect(service.update('id', updateBlogDto)).rejects.toThrow(error);
+    });
+
+    it(`should throw what blog custom fields repository throws`, () => {
+      const error = new Error();
+
+      jest
+        .spyOn(blogsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(blogCustomFieldsRepository, 'insert').mockRejectedValue(error);
 
       return expect(service.update('id', updateBlogDto)).rejects.toThrow(error);
     });

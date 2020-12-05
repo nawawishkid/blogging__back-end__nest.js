@@ -243,5 +243,13 @@ describe('BlogsController', () => {
         NotFoundException,
       );
     });
+
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsService, 'remove').mockRejectedValue(error);
+
+      return expect(controller.remove('blog-id')).rejects.toThrow(error);
+    });
   });
 });
