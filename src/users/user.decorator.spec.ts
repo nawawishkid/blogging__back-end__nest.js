@@ -5,9 +5,11 @@ import { User } from './user.decorator';
  *
  * @see https://github.com/nestjs/nest/issues/1020
  */
-function getParamDecoratorFactory(decorator: Function) {
+function getParamDecoratorFactory(decorator: () => any) {
   class Test {
-    public test(@decorator() value) {}
+    public test(@decorator() value) {
+      return value;
+    }
   }
 
   const args = Reflect.getMetadata(ROUTE_ARGS_METADATA, Test, 'test');

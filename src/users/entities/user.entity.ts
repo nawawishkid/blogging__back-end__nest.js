@@ -9,7 +9,7 @@ import {
 import { Exclude } from 'class-transformer';
 import {
   IsBoolean,
-  IsDateString,
+  IsDate,
   IsEmail,
   IsInt,
   IsOptional,
@@ -50,14 +50,13 @@ export class User {
   @IsString()
   lastName: string;
 
-  @Column({ type: 'datetime' })
-  @IsDateString()
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @IsDate()
   createdAt: string;
 
   @OneToMany(
     () => Session,
     session => session.user,
-    { onDelete: 'CASCADE' },
   )
   @Exclude()
   sessions: Session[];
@@ -67,4 +66,8 @@ export class User {
     blog => blog.author,
   )
   blogs: Blog[];
+
+  constructor(partial: Partial<User>) {
+    Object.assign(this, partial);
+  }
 }

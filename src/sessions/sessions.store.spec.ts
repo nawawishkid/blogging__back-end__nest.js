@@ -1,21 +1,25 @@
-import session, { SessionData } from 'express-session';
+import { createLogger, transports } from 'winston';
+import { SessionData } from 'express-session';
 import { ExpressSessionDataDto } from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
 import { SessionsService } from './sessions.service';
 import { SessionsStore } from './sessions.store';
 
 describe(`SessionStore`, () => {
-  let sessionStore: SessionsStore,
-    sessionsService: SessionsService = ({
-      findOne: jest.fn(),
-      remove: jest.fn(),
-      update: jest.fn(),
-    } as unknown) as SessionsService;
+  let sessionStore: SessionsStore;
+  const sessionsService: SessionsService = ({
+    findOne: jest.fn(),
+    remove: jest.fn(),
+    upsert: jest.fn(),
+  } as unknown) as SessionsService;
 
   beforeEach(() => {
     jest.restoreAllMocks();
 
-    sessionStore = new SessionsStore(sessionsService);
+    sessionStore = new SessionsStore(
+      sessionsService,
+      createLogger({ transports: [new transports.Console({ silent: true })] }),
+    );
   });
 
   it(`get(sid, callback) should call the callback with deserialized session data`, async () => {
@@ -37,7 +41,7 @@ describe(`SessionStore`, () => {
   it(`set(sid, session, callback) should call the callback with null`, async () => {
     const callback = jest.fn();
 
-    jest.spyOn(sessionsService, 'update').mockResolvedValue(null);
+    jest.spyOn(sessionsService, 'upsert').mockResolvedValue(null);
     await sessionStore.set('1', {} as ExpressSessionDataDto, callback);
 
     expect(callback).toBeCalledWith(null);
@@ -49,39 +53,45 @@ describe(`SessionStore`, () => {
     const sessionData = ({
       user: { id: 1000 },
     } as unknown) as ExpressSessionDataDto;
+    const callback = jest.fn();
 
-    jest.spyOn(sessionsService, 'update').mockImplementation((sid, sess) => {
-      db[sid] = sess;
+    jest
+      .spyOn(sessionsService, 'upsert')
+      .mockImplementation((sid, sess, updateDto) => {
+        db[sid] = { ...sess, ...updateDto };
 
-      return Promise.resolve({} as Session);
-    });
+        return Promise.resolve({} as Session);
+      });
 
-    await sessionStore.set(sid, sessionData, () => {});
+    await sessionStore.set(sid, sessionData, callback);
 
     expect(db[sid].userId).toEqual(sessionData.user.id);
+    expect(callback).toBeCalled();
   });
 
   it(`set(sid, session, callback) should not set userId on session entity object`, async () => {
     const db = {};
     const sid = '1';
     const sessionData: ExpressSessionDataDto = {} as ExpressSessionDataDto;
+    const callback = jest.fn();
 
-    jest.spyOn(sessionsService, 'update').mockImplementation((sid, sess) => {
+    jest.spyOn(sessionsService, 'upsert').mockImplementation((sid, sess) => {
       db[sid] = sess;
 
       return Promise.resolve({} as Session);
     });
 
-    await sessionStore.set(sid, sessionData, () => {});
+    await sessionStore.set(sid, sessionData, callback);
 
     expect(db[sid].userId).toBeUndefined();
+    expect(callback).toBeCalled();
   });
 
   it(`set(sid, session, callback) should call the callback with error`, async () => {
     const callback = jest.fn();
     const error = 'error';
 
-    jest.spyOn(sessionsService, 'update').mockRejectedValue(error);
+    jest.spyOn(sessionsService, 'upsert').mockRejectedValue(error);
     await sessionStore.set('1', {} as ExpressSessionDataDto, callback);
 
     expect(callback).toBeCalledWith(error);
@@ -90,7 +100,7 @@ describe(`SessionStore`, () => {
   it(`touch(sid, session, callback) should call the callback with null`, async () => {
     const callback = jest.fn();
 
-    jest.spyOn(sessionsService, 'update').mockResolvedValue(null);
+    jest.spyOn(sessionsService, 'upsert').mockResolvedValue(null);
     await sessionStore.touch('1', {} as ExpressSessionDataDto, callback);
 
     expect(callback).toBeCalledWith(null);
@@ -100,7 +110,7 @@ describe(`SessionStore`, () => {
     const callback = jest.fn();
     const error = 'error';
 
-    jest.spyOn(sessionsService, 'update').mockRejectedValue(error);
+    jest.spyOn(sessionsService, 'upsert').mockRejectedValue(error);
     await sessionStore.touch('1', {} as ExpressSessionDataDto, callback);
 
     expect(callback).toBeCalledWith(error);

@@ -1,3 +1,5 @@
+import { createLogger, transports } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
@@ -11,6 +13,7 @@ import { SessionsService } from './sessions.service';
 import { User } from 'src/users/entities/user.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionData } from 'express-session';
+import { SessionNotFoundException } from './exceptions/session-not-found.exception';
 
 describe('SessionsService', () => {
   let service: SessionsService,
@@ -30,9 +33,16 @@ describe('SessionsService', () => {
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
+            update: jest.fn(),
           },
         },
         { provide: AuthService, useValue: { authenticate: jest.fn() } },
+        {
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: createLogger({
+            transports: [new transports.Console({ silent: true })],
+          }),
+        },
       ],
     }).compile();
 
@@ -49,11 +59,20 @@ describe('SessionsService', () => {
 
   describe('findAll(userId: number)', () => {
     it('should return all sessions of given user id', async () => {
+      const userId = 1;
       const sessionEntities: Session[] = [{ data: 'abc' } as Session];
+      let receivedUserId;
 
-      jest.spyOn(sessionsRepository, 'find').mockResolvedValue(sessionEntities);
+      jest
+        .spyOn(sessionsRepository, 'find')
+        .mockImplementation((condition: any) => {
+          receivedUserId = condition.where.userId;
 
-      await expect(service.findAll(1)).resolves.toBe(sessionEntities);
+          return Promise.resolve(sessionEntities);
+        });
+
+      await expect(service.findAll(userId)).resolves.toBe(sessionEntities);
+      expect(receivedUserId).toEqual(userId);
     });
   });
 
@@ -76,7 +95,7 @@ describe('SessionsService', () => {
       const user = { id: 1000 } as User;
       const sid = '10';
       const expressSession = ({
-        cookie: { _expires: 10 },
+        cookie: { expires: new Date() },
       } as unknown) as ExpressSessionDataDto;
 
       jest.spyOn(sessionsRepository, 'save').mockResolvedValue(null);
@@ -94,9 +113,9 @@ describe('SessionsService', () => {
       const user: User = { id: 1 } as User;
       const createSessionDto: CreateSessionDto = { email: '', password: '' };
       const expressSession = ({
-        cookie: { _expires: 10 },
+        cookie: { expires: new Date() },
       } as unknown) as ExpressSessionDataDto;
-      const sid: string = '1';
+      const sid = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),
       } as Session;
@@ -114,9 +133,9 @@ describe('SessionsService', () => {
     it(`should throw if given user credential is invalid`, async () => {
       const createSessionDto: CreateSessionDto = { email: '', password: '' };
       const expressSession = ({
-        cookie: { _expires: 10 },
+        cookie: { expires: new Date() },
       } as unknown) as ExpressSessionDataDto;
-      const sid: string = '1';
+      const sid = '1';
       const createdSessionEntity: Session = {
         data: JSON.stringify(expressSession),
       } as Session;
@@ -133,23 +152,78 @@ describe('SessionsService', () => {
     });
   });
 
-  describe('update()', () => {
+  describe('upsert()', () => {
     it('should return updated session with serialized session data', async () => {
-      const expressSession: SessionData = { cookie: {} } as SessionData;
+      const sid = 'hahaha';
+      const expressSession: SessionData = {
+        cookie: { expires: new Date() },
+      } as SessionData;
       const updateSessionDto: UpdateSessionDto = {
-        data: expressSession,
+        isRevoked: true,
       };
-      const updatedSessionEntity: Session = {
-        data: JSON.stringify(expressSession),
-      } as Session;
 
       jest
         .spyOn(sessionsRepository, 'save')
-        .mockResolvedValue(updatedSessionEntity);
+        .mockImplementation(entity => Promise.resolve(entity as Session));
 
-      await expect(service.update('id', updateSessionDto)).resolves.toBe(
-        updatedSessionEntity,
+      const updatedSessionEntity = await service.upsert(
+        sid,
+        expressSession,
+        updateSessionDto,
       );
+
+      expect(updatedSessionEntity).toEqual(
+        expect.objectContaining({
+          id: sid,
+          data: JSON.stringify(expressSession),
+          isRevoked: updateSessionDto.isRevoked,
+        }),
+      );
+    });
+  });
+
+  describe(`update()`, () => {
+    let sessionData: SessionData;
+
+    beforeEach(() => {
+      sessionData = { cookie: { expires: new Date() } } as SessionData;
+    });
+
+    it(`should return updated session`, () => {
+      const updatedSession: Session = {} as Session;
+
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(updatedSession);
+
+      return expect(
+        service.update('id', sessionData, {} as UpdateSessionDto),
+      ).resolves.toEqual(updatedSession);
+    });
+
+    it(`should set data object in the dto on session object`, async () => {
+      const updateSessionDto: UpdateSessionDto = { data: { a: 1, b: 2 } };
+
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
+
+      await service.update('id', sessionData, updateSessionDto);
+
+      expect(sessionData).toEqual(
+        expect.objectContaining(updateSessionDto.data),
+      );
+    });
+
+    it(`should throw SessionNotFoundException`, () => {
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 0 } as any);
+
+      return expect(
+        service.update('id', sessionData, {} as UpdateSessionDto),
+      ).rejects.toThrow(SessionNotFoundException);
     });
   });
 
@@ -157,9 +231,21 @@ describe('SessionsService', () => {
     it('should return revoked session id', async () => {
       const id = 'id';
 
-      jest.spyOn(sessionsRepository, 'save').mockResolvedValue({ id } as any);
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as any);
 
       await expect(service.remove(id)).resolves.toBe(id);
+    });
+
+    it(`should throw SessionNotFoundException`, () => {
+      jest
+        .spyOn(sessionsRepository, 'update')
+        .mockResolvedValue({ affected: 0 } as any);
+
+      return expect(service.remove('abc')).rejects.toThrow(
+        SessionNotFoundException,
+      );
     });
   });
 });

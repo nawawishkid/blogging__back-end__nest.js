@@ -7,13 +7,18 @@ import {
   Param,
   Delete,
   NotFoundException,
-  InternalServerErrorException,
   HttpCode,
+  UseGuards,
+  BadRequestException,
+  ConflictException,
+  Query,
 } from '@nestjs/common';
+import { AuthGuard } from '../auth.guard';
 import { User as UserEntity } from '../users/entities/user.entity';
 import { User } from '../users/user.decorator';
 import { BlogsService } from './blogs.service';
 import { CreateBlogRequestBodyDto } from './dto/create-blog-request-body.dto';
+import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import {
   CreateBlogResponseDto,
@@ -21,10 +26,12 @@ import {
   FindOneBlogResponseDto,
   UpdateBlogResponseDto,
 } from './dto/response.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
+@UseGuards(AuthGuard)
 @Controller('blogs')
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
@@ -44,13 +51,24 @@ export class BlogsController {
 
       return { createdBlog };
     } catch (e) {
-      throw new InternalServerErrorException();
+      if (e instanceof DuplicatedBlogCustomFieldException)
+        throw new ConflictException(e);
+
+      if (e instanceof CustomFieldValueNotFoundException)
+        throw new BadRequestException(e);
+
+      throw e;
     }
   }
 
   @Get()
-  async findAll(@User() user: UserEntity): Promise<FindAllBlogsResponseDto> {
-    const foundBlogs: Blog[] = await this.blogsService.findByAuthorId(user.id);
+  async findAll(
+    @User() user: UserEntity,
+    @Query(`keyword`) keyword?: string,
+  ): Promise<FindAllBlogsResponseDto> {
+    const foundBlogs: Blog[] = keyword
+      ? await this.blogsService.search(keyword)
+      : await this.blogsService.findByAuthorId(user.id);
 
     if (!foundBlogs) throw new NotFoundException();
 
@@ -69,7 +87,7 @@ export class BlogsController {
   @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateBlogDto: UpdateBlogDto,
+    @Body() updateBlogDto: UpdateBlogRequestBodyDto,
   ): Promise<UpdateBlogResponseDto> {
     try {
       const updatedBlog: Blog = await this.blogsService.update(
@@ -79,9 +97,13 @@ export class BlogsController {
 
       return { updatedBlog };
     } catch (e) {
-      if (e instanceof BlogNotFoundException) throw new NotFoundException();
+      if (e instanceof BlogNotFoundException) throw new NotFoundException(e);
+      if (e instanceof DuplicatedBlogCustomFieldException)
+        throw new ConflictException(e);
+      if (e instanceof CustomFieldValueNotFoundException)
+        throw new BadRequestException(e);
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 
@@ -93,7 +115,7 @@ export class BlogsController {
     } catch (e) {
       if (e instanceof BlogNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 }

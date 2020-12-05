@@ -1,10 +1,5 @@
-import {
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreateFileDto } from './dto/create-file.dto';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
@@ -77,43 +72,14 @@ describe('FilesController', () => {
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
     it(`should return the created file`, () => {
+      const file: Express.Multer.File = {} as Express.Multer.File;
       const createdFile: File = {} as File;
 
       jest.spyOn(filesService, 'create').mockResolvedValue(createdFile as any);
 
-      return expect(controller.create({} as CreateFileDto)).resolves.toEqual({
+      return expect(controller.create(file)).resolves.toEqual({
         createdFile,
       });
-    });
-  });
-
-  describe(`update(fileId: string, updateFileDto: UpdateFileDto)`, () => {
-    it(`should return the updated file`, () => {
-      const updatedFile: File = {} as File;
-
-      jest.spyOn(filesService, 'update').mockResolvedValue(updatedFile as any);
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).resolves.toEqual({ updatedFile });
-    });
-
-    it(`should throw the NotFoundException if a file with the given id could not be found to update (no upsert)`, () => {
-      jest
-        .spyOn(filesService, 'update')
-        .mockRejectedValue(new FileNotFoundException());
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
-      jest.spyOn(filesService, 'update').mockRejectedValue(new Error());
-
-      return expect(
-        controller.update('1', {} as UpdateFileDto),
-      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
@@ -134,12 +100,12 @@ describe('FilesController', () => {
       return expect(controller.remove('1')).rejects.toThrow(NotFoundException);
     });
 
-    it(`should throw the InternalServerErrorException if there is another error thrown by filesService`, () => {
-      jest.spyOn(filesService, 'remove').mockRejectedValue(new Error());
+    it(`should throw what is thrown by filesService`, () => {
+      const error = new Error();
 
-      return expect(controller.remove('1')).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      jest.spyOn(filesService, 'remove').mockRejectedValue(error);
+
+      return expect(controller.remove('1')).rejects.toThrow(error);
     });
   });
 });

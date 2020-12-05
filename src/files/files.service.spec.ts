@@ -1,14 +1,14 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateFileDto } from './dto/create-file.dto';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import { FilesService } from './files.service';
 
 describe('FilesService', () => {
   let service: FilesService, filesRepository: Repository<File>;
+  const appUrl = `http://localhost:3000`;
 
   beforeEach(async () => {
     jest.restoreAllMocks();
@@ -25,6 +25,10 @@ describe('FilesService', () => {
             delete: jest.fn(),
             update: jest.fn(),
           },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(appUrl) },
         },
       ],
     }).compile();
@@ -47,7 +51,7 @@ describe('FilesService', () => {
     });
 
     it(`should return undefined it there's no file found`, () => {
-      jest.spyOn(filesRepository, 'find').mockResolvedValue(undefined);
+      jest.spyOn(filesRepository, 'find').mockResolvedValue([]);
 
       return expect(service.findAll()).resolves.toBeUndefined();
     });
@@ -70,46 +74,26 @@ describe('FilesService', () => {
   });
 
   describe(`create(createFileDto: CreateFileDto)`, () => {
-    it(`should return the created file`, () => {
-      const createFileDto: CreateFileDto = {
-        name: 'hello',
-        file: { path: 'http://abc.com', size: 10032309, type: 'image/png' },
-      };
-      const createdFile: File = {
-        id: 1,
-        name: createFileDto.name,
-        ...createFileDto.file,
-      };
+    it(`should return the created file`, async () => {
+      const file: Express.Multer.File = ({
+        mimetype: 'image/png',
+        filename: 'lorem.png',
+      } as unknown) as Express.Multer.File;
+      let receivedEntity: any;
+      const createdFile: File = {} as File;
 
-      jest.spyOn(filesRepository, 'save').mockResolvedValue(createdFile);
+      jest.spyOn(filesRepository, 'save').mockImplementation(f => {
+        receivedEntity = f;
 
-      return expect(service.create(createFileDto)).resolves.toEqual(
-        createdFile,
-      );
-    });
-  });
+        return Promise.resolve(createdFile);
+      });
 
-  describe(`update(fileId: number, updateFileDto: UpdateFileDto)`, () => {
-    it(`should return the updated file`, () => {
-      const updatedFile: File = {} as File;
-
-      jest
-        .spyOn(filesRepository, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
-      jest.spyOn(filesRepository, 'findOne').mockResolvedValue(updatedFile);
-
-      return expect(service.update(1, {} as UpdateFileDto)).resolves.toEqual(
-        updatedFile,
-      );
-    });
-
-    it(`should throw the FileNotFoundException if a file with the given file id could not be found (no upsert)`, () => {
-      jest
-        .spyOn(filesRepository, 'update')
-        .mockResolvedValue({ affected: 0 } as any);
-
-      return expect(service.update(1, {} as UpdateFileDto)).rejects.toThrow(
-        FileNotFoundException,
+      expect(await service.create(file)).toEqual(createdFile);
+      expect(receivedEntity).toEqual(
+        expect.objectContaining({
+          type: file.mimetype,
+          path: appUrl + file.filename,
+        }),
       );
     });
   });

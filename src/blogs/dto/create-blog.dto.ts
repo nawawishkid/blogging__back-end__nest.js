@@ -4,8 +4,9 @@ export class CreateBlogDto {
   @IsString()
   title: string;
 
+  @IsOptional()
   @IsString()
-  body: string;
+  body?: string;
 
   @IsInt()
   authorId: number;
@@ -17,4 +18,8 @@ export class CreateBlogDto {
   @IsOptional()
   @IsString()
   excerpt?: string;
+
+  @IsOptional()
+  @IsInt({ each: true })
+  customFieldValueIds?: number[];
 }

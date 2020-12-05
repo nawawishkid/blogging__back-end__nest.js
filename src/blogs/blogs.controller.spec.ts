@@ -1,15 +1,19 @@
 import {
-  InternalServerErrorException,
+  BadRequestException,
+  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
 import { User } from 'src/users/entities/user.entity';
 import { BlogsController } from './blogs.controller';
 import { BlogsService } from './blogs.service';
+import { CreateBlogRequestBodyDto } from './dto/create-blog-request-body.dto';
 import { CreateBlogDto } from './dto/create-blog.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
+import { UpdateBlogRequestBodyDto } from './dto/update-blog-request-body.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 describe('BlogsController', () => {
   let controller: BlogsController, blogsService: BlogsService;
@@ -28,6 +32,7 @@ describe('BlogsController', () => {
             remove: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            search: jest.fn(),
           },
         },
       ],
@@ -50,6 +55,19 @@ describe('BlogsController', () => {
       return expect(controller.findAll({} as User)).resolves.toEqual({
         blogs: foundBlogs,
       });
+    });
+
+    it(`should return all blogs found by given keyword`, async () => {
+      const keyword = 'keyword';
+      const foundBlogs: Blog[] = [{}, {}] as Blog[];
+
+      jest.spyOn(blogsService, 'search').mockResolvedValue(foundBlogs);
+      jest.spyOn(blogsService, 'findByAuthorId');
+
+      expect(await controller.findAll({} as User, keyword)).toEqual({
+        blogs: foundBlogs,
+      });
+      expect(blogsService.findByAuthorId).not.toHaveBeenCalled();
     });
 
     it(`should throw NotFoundException if the given user has no blogs`, () => {
@@ -92,23 +110,69 @@ describe('BlogsController', () => {
       ).resolves.toEqual({ createdBlog });
     });
 
-    it(`should throw the InternalServerErrorException if there is an error thrown by blogsService`, () => {
-      jest.spyOn(blogsService, 'create').mockRejectedValueOnce(new Error());
+    it(`should assign authorId`, async () => {
+      const user: User = { id: 123 } as User;
+      let receivedAuthorId;
+
+      jest.spyOn(blogsService, 'create').mockImplementation(data => {
+        receivedAuthorId = data.authorId;
+
+        return Promise.resolve({} as Blog);
+      });
+      await controller.create(user, {} as CreateBlogRequestBodyDto);
+
+      expect(receivedAuthorId).toEqual(user.id);
+    });
+
+    it(`should throw BadRequestException`, () => {
+      const createBlogRequestDto: CreateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 3],
+      };
+
+      jest
+        .spyOn(blogsService, 'create')
+        .mockRejectedValue(new CustomFieldValueNotFoundException());
 
       return expect(
-        controller.create({} as User, {} as CreateBlogDto),
-      ).rejects.toThrow(InternalServerErrorException);
+        controller.create({} as User, createBlogRequestDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw ConflictException`, () => {
+      const createBlogRequestDto: CreateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 1],
+      };
+
+      jest
+        .spyOn(blogsService, 'create')
+        .mockRejectedValue(new DuplicatedBlogCustomFieldException());
+
+      return expect(
+        controller.create({} as User, createBlogRequestDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsService, 'create').mockRejectedValue(error);
+
+      return expect(
+        controller.create({} as User, {} as CreateBlogRequestBodyDto),
+      ).rejects.toThrow(error);
     });
   });
 
-  describe(`update(blogId: string, updateBlogDto: UpdateBlogDto)`, () => {
+  describe(`update(blogId: string, updateBlogDto: UpdateBlogRequestBodyDto)`, () => {
     it(`should return updated blog`, () => {
       const updatedBlog = {} as Blog;
 
       jest.spyOn(blogsService, 'update').mockResolvedValue(updatedBlog);
 
       return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
+        controller.update('blog-id', {} as UpdateBlogRequestBodyDto),
       ).resolves.toEqual({ updatedBlog });
     });
 
@@ -118,16 +182,48 @@ describe('BlogsController', () => {
         .mockRejectedValue(new BlogNotFoundException());
 
       return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
+        controller.update('blog-id', {} as UpdateBlogRequestBodyDto),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it(`should throw the InternalServerErrorException if there is another error thrown by blogsService`, () => {
-      jest.spyOn(blogsService, 'update').mockRejectedValue(new Error());
+    it(`should throw BadRequestException`, () => {
+      const updateBlogRequestDto: UpdateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 3],
+      };
+
+      jest
+        .spyOn(blogsService, 'update')
+        .mockRejectedValue(new CustomFieldValueNotFoundException());
 
       return expect(
-        controller.update('blog-id', {} as UpdateBlogDto),
-      ).rejects.toThrow(InternalServerErrorException);
+        controller.update('id', updateBlogRequestDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it(`should throw ConflictException`, () => {
+      const updateBlogRequestDto: UpdateBlogRequestBodyDto = {
+        title: 'ok',
+        customFieldValueIds: [1, 2, 1],
+      };
+
+      jest
+        .spyOn(blogsService, 'update')
+        .mockRejectedValue(new DuplicatedBlogCustomFieldException());
+
+      return expect(
+        controller.update('id', updateBlogRequestDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
+
+      jest.spyOn(blogsService, 'update').mockRejectedValue(error);
+
+      return expect(
+        controller.update('id', {} as CreateBlogRequestBodyDto),
+      ).rejects.toThrow(error);
     });
   });
 
@@ -148,12 +244,12 @@ describe('BlogsController', () => {
       );
     });
 
-    it(`should throw the InternalServerErrorException if there is another error thrown by the blogsService`, () => {
-      jest.spyOn(blogsService, 'remove').mockRejectedValue(new Error());
+    it(`should throw what is thrown by the blogs service`, () => {
+      const error = new Error();
 
-      return expect(controller.remove('blog-id')).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      jest.spyOn(blogsService, 'remove').mockRejectedValue(error);
+
+      return expect(controller.remove('blog-id')).rejects.toThrow(error);
     });
   });
 });

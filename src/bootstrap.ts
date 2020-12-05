@@ -1,18 +1,20 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { SessionsMiddleware } from './sessions/sessions.middleware';
+import * as helmet from 'helmet';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { ValidationPipe } from '@nestjs/common';
 import { UserMiddleware } from './users/user.middleware';
-import { UsersService } from './users/users.service';
+import { AppExceptionFilter } from './exception.filter';
+import { tap } from 'rxjs/operators';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import * as session from 'express-session';
+import { ConfigService } from '@nestjs/config';
 
-export async function bootstrap(app: INestApplication) {
-  const sessionMiddleware = new SessionsMiddleware(app.get('SESSION_OPTIONS'));
-  const userMiddleware = new UserMiddleware(
-    app.get<UsersService>(UsersService),
-  );
+export async function bootstrap(app: NestExpressApplication) {
+  const logger = app.get<Logger>(WINSTON_MODULE_PROVIDER);
+  const configService = app.get<ConfigService>(ConfigService);
+  const userMiddleware = app.get(UserMiddleware);
+  const middlewares = [];
 
-  app.use(
-    sessionMiddleware.use.bind(sessionMiddleware),
-    userMiddleware.use.bind(userMiddleware),
-  );
   app.useGlobalPipes(
     /**
      * 'validateCustomeDecorators' option is not cited in the doc.
@@ -23,8 +25,53 @@ export async function bootstrap(app: INestApplication) {
      * Just opened an issue about this issue:
      * @see https://github.com/nestjs/docs.nestjs.com/issues/1566
      */
-    new ValidationPipe({ transform: true, validateCustomDecorators: true }),
+    new ValidationPipe({
+      transform: true,
+      validateCustomDecorators: true,
+      forbidNonWhitelisted: true,
+      whitelist: true,
+    }),
   );
+  app.useGlobalFilters(new AppExceptionFilter(logger));
+
+  if (process.env.NODE_ENV !== 'production') {
+    middlewares.push((req, res, next) => {
+      logger.defaultMeta = {
+        requestId: Date.now()
+          .toString()
+          .slice(13 - 6),
+      };
+      logger.info(`${req.method.toUpperCase()} ${req.url}`, {
+        namespace: `Middleware:RequestLoggingMiddleware`,
+      });
+      next();
+    });
+    app.useGlobalInterceptors({
+      intercept(ctx, next) {
+        const meta = { namespace: `Interceptor:AppInterceptor` };
+        const handler = v => {
+          logger.debug(`data:`, { ...meta, json: v });
+          logger.verbose(`End of intercept`, meta);
+        };
+        logger.verbose(`intercept()`, meta);
+        logger.debug(`Processing the request...`, meta);
+
+        return next.handle().pipe(tap(handler, handler));
+      },
+    });
+  } else {
+    app.enableCors(configService.get('cors'));
+  }
+
+  app.use(helmet());
+
+  middlewares.push(
+    session(configService.get('session')),
+    userMiddleware.use.bind(userMiddleware),
+  );
+
+  app.use(...middlewares);
+  app.useStaticAssets('public');
 
   return app;
 }

@@ -1,19 +1,74 @@
+import { escapeRegExp } from 'lodash';
+import {
+  ER_NO_REFERENCED_ROW_2,
+  ER_DUP_ENTRY,
+} from 'mysql/lib/protocol/constants/errors';
+import { nanoid } from 'nanoid';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository } from 'typeorm';
+import {
+  DeleteResult,
+  QueryFailedError,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entities/blog.entity';
 import { BlogNotFoundException } from './exceptions/blog-not-found.exception';
+import { BlogCustomField } from './entities/blog-custom-field.entity';
+import { CustomFieldValueNotFoundException } from '../custom-field-values/exceptions/custom-field-value-not-found.exception';
+import { DuplicatedBlogCustomFieldException } from './exceptions/duplicated-blog-custom-field.exception copy';
 
 @Injectable()
 export class BlogsService {
   constructor(
     @InjectRepository(Blog) private blogsRepository: Repository<Blog>,
+    @InjectRepository(BlogCustomField)
+    private blogCustomFieldsRepository: Repository<BlogCustomField>,
   ) {}
 
-  create(createBlogDto: CreateBlogDto) {
-    return this.blogsRepository.save(createBlogDto);
+  /**
+   * @TODO Should I use cascading?
+   */
+  async create(createBlogDto: CreateBlogDto) {
+    const { customFieldValueIds, ...b } = createBlogDto;
+    const blog: Blog = new Blog();
+
+    Object.assign(blog, b);
+
+    blog.id = nanoid();
+
+    const createdBlog: Blog = await this.blogsRepository.save(blog);
+
+    if (!customFieldValueIds || customFieldValueIds.length === 0)
+      return this.findOne(createdBlog.id);
+
+    const blogCustomFields = customFieldValueIds.map(id => {
+      const bcf: BlogCustomField = new BlogCustomField();
+
+      bcf.blogId = createdBlog.id;
+      bcf.customFieldValueId = id;
+
+      return bcf;
+    });
+
+    try {
+      await this.blogCustomFieldsRepository.insert(blogCustomFields);
+
+      return this.findOne(createdBlog.id);
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedBlogCustomFieldException();
+
+      if (
+        e instanceof QueryFailedError &&
+        (e as any).errno === ER_NO_REFERENCED_ROW_2
+      )
+        throw new CustomFieldValueNotFoundException();
+
+      throw e;
+    }
   }
 
   async findByAuthorId(userId: number): Promise<Blog[]> | undefined {
@@ -28,28 +83,77 @@ export class BlogsService {
   }
 
   findOne(id: string): Promise<Blog> | undefined {
-    return this.blogsRepository.findOne(id);
+    return this.blogsRepository.findOne(id, {
+      relations: [`blogCustomFields`, `author`],
+    });
   }
 
   async update(
     id: string,
     updateBlogDto: UpdateBlogDto,
   ): Promise<Blog> | undefined {
-    const updatedBlog: Blog = await this.blogsRepository.save({
+    const { customFieldValueIds, ...b } = updateBlogDto;
+    const blog: Blog = new Blog();
+
+    Object.assign(blog, b);
+
+    const updateResult: UpdateResult = await this.blogsRepository.update(
       id,
-      ...updateBlogDto,
+      blog,
+    );
+
+    if (updateResult.affected === 0) throw new BlogNotFoundException();
+
+    if (
+      !customFieldValueIds ||
+      !Array.isArray(customFieldValueIds) ||
+      customFieldValueIds.length === 0
+    )
+      return this.findOne(id);
+
+    const blogCustomFields = customFieldValueIds.map(cfvid => {
+      const bcf: BlogCustomField = new BlogCustomField();
+
+      bcf.blogId = id;
+      bcf.customFieldValueId = cfvid;
+
+      return bcf;
     });
 
-    if (!updatedBlog) return undefined;
+    try {
+      await this.blogCustomFieldsRepository.insert(blogCustomFields);
 
-    return updatedBlog;
+      return this.findOne(id);
+    } catch (e) {
+      if (e instanceof QueryFailedError && (e as any).errno === ER_DUP_ENTRY)
+        throw new DuplicatedBlogCustomFieldException();
+
+      if (
+        e instanceof QueryFailedError &&
+        (e as any).errno === ER_NO_REFERENCED_ROW_2
+      )
+        throw new CustomFieldValueNotFoundException();
+
+      throw e;
+    }
   }
 
   async remove(id: string): Promise<string> {
     const deleteResult: DeleteResult = await this.blogsRepository.delete(id);
 
-    if (deleteResult.affected === null) throw new BlogNotFoundException();
+    if (deleteResult.affected === 0) throw new BlogNotFoundException();
 
     return id;
+  }
+
+  async search(keyword: string): Promise<Blog[]> {
+    const foundBlogs: Blog[] = await this.blogsRepository
+      .createQueryBuilder(`blog`)
+      .where(`blog.title RLIKE :keyword`, {
+        keyword: `^.*${escapeRegExp(keyword)}.*$`,
+      })
+      .getMany();
+
+    return foundBlogs;
   }
 }

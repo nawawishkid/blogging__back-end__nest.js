@@ -1,75 +1,149 @@
-import { Injectable } from '@nestjs/common';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from '../auth/auth.service';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
 import {
   ExpressSessionDataDto,
   UpdateSessionDto,
 } from './dto/update-session.dto';
 import { Session } from './entities/session.entity';
+import { SessionData } from 'express-session';
+import { SessionNotFoundException } from './exceptions/session-not-found.exception';
 
 @Injectable()
 export class SessionsService {
+  private readonly logger: Logger;
+
   constructor(
     @InjectRepository(Session) private sessionsRepository: Repository<Session>,
     private readonly authService: AuthService,
-  ) {}
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly parentLogger: Logger,
+  ) {
+    this.logger = this.parentLogger.child({
+      namespace: `Service:${SessionsService.name}`,
+    });
+  }
 
   async create(
     sid: string,
     createSessionDto: CreateSessionDto,
     session: ExpressSessionDataDto,
   ): Promise<Session> {
+    this.logger.verbose(`create()`);
+    this.logger.verbose(`Creating a new session...`);
     const { email, password } = createSessionDto;
+    this.logger.debug(`email: "${email}"; password: "${password}"`);
+    this.logger.verbose(`Authenticating user with the given credential...`);
 
-    try {
-      const user = await this.authService.authenticate(email, password);
+    /**
+     * @TODO Implement this in guard
+     */
+    const user = await this.authService.authenticate(email, password);
 
-      session.user = { id: user.id };
+    this.logger.debug(`Authenticated user:`, { json: user });
+    session.user = { id: user.id };
 
-      return this.update(sid, {
-        userId: user.id,
-        data: session,
-      });
-    } catch (e) {
-      throw e;
-    }
+    const createdSession = await this.upsert(sid, session, {
+      userId: user.id,
+    });
+
+    this.logger.verbose(`End of create()`);
+
+    return createdSession;
   }
 
   findAll(userId: number): Promise<Session[]> {
-    return this.sessionsRepository.find({ where: { id: userId } });
+    return this.sessionsRepository.find({ where: { userId } });
   }
 
   findOne(id: string): Promise<Session> {
     return this.sessionsRepository.findOne(id);
   }
 
-  async update(
+  async upsert(
     id: string,
+    session: SessionData,
     updateSessionDto: UpdateSessionDto,
   ): Promise<Session> {
-    const updatedSession = await this.sessionsRepository.save(
-      this.updateSessionDtoToSessionEntity(id, updateSessionDto),
+    this.logger.verbose(`update()`);
+    this.logger.verbose(`Updating a session...`);
+    this.logger.debug(`Session ID: ${id}`);
+    this.logger.debug(`Session:`, { json: session });
+    this.logger.debug(`updateSessionDto:`, { json: updateSessionDto });
+
+    const sessionEntity = this.updateSessionDtoToSessionEntity(
+      id,
+      session,
+      updateSessionDto,
     );
+
+    this.logger.debug(`Mapped session entity:`, { json: sessionEntity });
+
+    const updatedSession = await this.sessionsRepository.save(sessionEntity);
+
+    this.logger.debug(`Updated session:`, { json: updatedSession });
+    this.logger.verbose(`Update session successfully`);
+    this.logger.verbose(`End of update()`);
 
     return updatedSession;
   }
 
-  async remove(id: string): Promise<string> {
-    const session = await this.sessionsRepository.save({ id, isRevoked: true });
+  async update(
+    id: string,
+    session: SessionData,
+    updateSessionDto: UpdateSessionDto,
+  ): Promise<Session> {
+    const sessionEntity = this.updateSessionDtoToSessionEntity(
+      id,
+      session,
+      updateSessionDto,
+    );
+    const updateResult: UpdateResult = await this.sessionsRepository.update(
+      id,
+      sessionEntity,
+    );
 
-    return session.id;
+    if (updateResult.affected === 0) throw new SessionNotFoundException();
+
+    return this.findOne(id);
   }
 
-  private updateSessionDtoToSessionEntity(sid, updateSessionDto) {
-    const { data, ...rest } = updateSessionDto;
+  async remove(id: string): Promise<string> {
+    const updateResult: UpdateResult = await this.sessionsRepository.update(
+      id,
+      {
+        isRevoked: true,
+      },
+    );
 
-    return {
+    if (updateResult.affected === 0) throw new SessionNotFoundException();
+
+    return id;
+  }
+
+  private updateSessionDtoToSessionEntity(
+    sid: string,
+    session: ExpressSessionDataDto,
+    updateSessionDto: UpdateSessionDto,
+  ): Partial<Session> {
+    this.logger.verbose(`Creating session entity from updateSessionDto...`);
+    const { data, isRevoked, userId } = updateSessionDto;
+
+    for (const key in data) {
+      session[key] = data[key];
+    }
+
+    const result = {
       id: sid,
-      data: JSON.stringify(data),
-      expiresAt: data.cookie._expires,
-      ...rest,
+      data: JSON.stringify(session),
+      expiresAt: session.cookie.expires.toISOString(),
+      isRevoked,
+      userId,
     };
+
+    return result;
   }
 }

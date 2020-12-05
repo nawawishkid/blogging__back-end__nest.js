@@ -15,13 +15,23 @@ import {
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
-import { UpdateSessionDto } from './dto/update-session.dto';
+import {
+  ExpressSessionDataDto,
+  UpdateSessionDto,
+} from './dto/update-session.dto';
 import { Session as SessionEntity } from './entities/session.entity';
 import { User } from '../users/user.decorator';
 import { User as UserEntity } from '../users/entities/user.entity';
 import { EmailNotFoundException } from './exceptions/email-not-found.exception';
 import { IncorrectPasswordException } from './exceptions/incorrect-password.exception';
 import { AuthGuard } from '../auth.guard';
+import {
+  CreateSessionResponseDto,
+  FindAllSessionsResponseDto,
+  FindOneSessionResponseDto,
+  UpdateSessionResponseDto,
+} from './dto/response.dto';
+import { SessionNotFoundException } from './exceptions/session-not-found.exception';
 
 @Controller('sessions')
 export class SessionsController {
@@ -31,19 +41,22 @@ export class SessionsController {
   async create(
     @Body() createSessionDto: CreateSessionDto,
     @Session() session,
-  ): Promise<SessionEntity> {
+  ): Promise<CreateSessionResponseDto> {
     try {
-      return await this.sessionsService.create(
+      const createdSession = await this.sessionsService.create(
         session.id,
         createSessionDto,
         session,
       );
+
+      return { createdSession };
     } catch (e) {
       if (
         e instanceof EmailNotFoundException ||
         e instanceof IncorrectPasswordException
-      )
+      ) {
         throw new UnauthorizedException();
+      }
 
       throw new InternalServerErrorException(e);
     }
@@ -51,42 +64,65 @@ export class SessionsController {
 
   @UseGuards(AuthGuard)
   @Get()
-  async findAll(@User() user: UserEntity): Promise<SessionEntity[]> {
-    const foundSessions: SessionEntity[] = await this.sessionsService.findAll(
-      user.id,
-    );
+  async findAll(@User() user: UserEntity): Promise<FindAllSessionsResponseDto> {
+    const sessions:
+      | SessionEntity[]
+      | undefined = await this.sessionsService.findAll(user.id);
 
-    if (
-      !foundSessions ||
-      (Array.isArray(foundSessions) && foundSessions.length === 0)
-    )
+    if (!sessions || (Array.isArray(sessions) && sessions.length === 0)) {
       throw new NotFoundException();
+    }
 
-    return foundSessions;
+    return { sessions };
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<SessionEntity> {
-    const foundSession = await this.sessionsService.findOne(id);
+  async findOne(@Param('id') id: string): Promise<FindOneSessionResponseDto> {
+    const session = await this.sessionsService.findOne(id);
 
-    if (!foundSession) throw new NotFoundException();
+    if (!session) throw new NotFoundException();
 
-    return foundSession;
+    return { session };
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id')
-  update(
+  async update(
     @Param('id') id: string,
+    @User() user: UserEntity,
+    @Session() session: ExpressSessionDataDto,
     @Body() updateSessionDto: UpdateSessionDto,
-  ): Promise<SessionEntity> {
-    return this.sessionsService.update(id, updateSessionDto);
+  ): Promise<UpdateSessionResponseDto> {
+    if (!('userId' in updateSessionDto)) {
+      updateSessionDto.userId = user.id;
+    }
+
+    try {
+      const updatedSession = await this.sessionsService.update(
+        id,
+        session,
+        updateSessionDto,
+      );
+
+      return { updatedSession };
+    } catch (e) {
+      if (e instanceof SessionNotFoundException) throw new NotFoundException();
+
+      throw e;
+    }
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
-    const deletedSessionId = await this.sessionsService.remove(id);
+    try {
+      await this.sessionsService.remove(id);
+    } catch (e) {
+      if (e instanceof SessionNotFoundException) throw new NotFoundException();
 
-    if (deletedSessionId === null) throw new NotFoundException();
+      throw e;
+    }
   }
 }

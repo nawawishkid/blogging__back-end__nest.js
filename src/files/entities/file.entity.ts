@@ -1,5 +1,6 @@
-import { Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
+@Entity()
 export class File {
   @PrimaryGeneratedColumn()
   id: number;
@@ -12,7 +13,4 @@ export class File {
 
   @Column('int')
   size: number;
-
-  @Column('varchar', { nullable: true, unique: true })
-  name?: string;
 }

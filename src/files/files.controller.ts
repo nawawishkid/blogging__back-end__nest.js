@@ -1,36 +1,46 @@
+import { diskStorage } from 'multer';
 import {
   Controller,
   Get,
   Post,
-  Body,
-  Put,
   Param,
   Delete,
   HttpCode,
   NotFoundException,
-  InternalServerErrorException,
+  UseInterceptors,
+  UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { CreateFileDto } from './dto/create-file.dto';
-import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './entities/file.entity';
 import { FileNotFoundException } from './exceptions/file-not-found.exception';
 import {
   CreateFileResponseDto,
   FindAllFilesResponseDto,
   FindOneFileResponseDto,
-  UpdateFileResponseDto,
 } from './dto/response.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { nameUploadedFile } from './files.utils';
+import { AuthGuard } from '../auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
+  @UseInterceptors(
+    FileInterceptor(`file`, {
+      storage: diskStorage({
+        destination: 'public',
+        filename: nameUploadedFile,
+      }),
+    }),
+  )
   @Post()
   async create(
-    @Body() createFileDto: CreateFileDto,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<CreateFileResponseDto> {
-    const createdFile: File = await this.filesService.create(createFileDto);
+    const createdFile: File = await this.filesService.create(file);
 
     return { createdFile };
   }
@@ -53,25 +63,6 @@ export class FilesController {
     return { file };
   }
 
-  @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateFileDto: UpdateFileDto,
-  ): Promise<UpdateFileResponseDto> {
-    try {
-      const updatedFile: File = await this.filesService.update(
-        +id,
-        updateFileDto,
-      );
-
-      return { updatedFile };
-    } catch (e) {
-      if (e instanceof FileNotFoundException) throw new NotFoundException();
-
-      throw new InternalServerErrorException();
-    }
-  }
-
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
@@ -80,7 +71,7 @@ export class FilesController {
     } catch (e) {
       if (e instanceof FileNotFoundException) throw new NotFoundException();
 
-      throw new InternalServerErrorException();
+      throw e;
     }
   }
 }

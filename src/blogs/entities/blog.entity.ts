@@ -1,6 +1,16 @@
 import { User } from '../../users/entities/user.entity';
-import { Column, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { BlogCustomField } from './blog-custom-field.entity';
 
+@Entity()
 export class Blog {
   @PrimaryColumn('uuid')
   id: string;
@@ -8,32 +18,38 @@ export class Blog {
   @Column('varchar')
   title: string;
 
-  @Column('text')
-  body: string;
+  @Column('text', { nullable: true })
+  body?: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   coverImage: string;
 
   @Column('text', { nullable: true })
   excerpt?: string;
 
-  @Column('int')
-  authorId: number;
+  @Column('int', { select: false })
+  authorId?: number;
 
   @ManyToOne(
     () => User,
     user => user.blogs,
-    { onDelete: 'NO ACTION' },
+    { onDelete: 'CASCADE' },
   )
-  @JoinColumn({ name: 'authorId' })
   author: User;
 
-  @Column()
+  @Column({ nullable: true })
   metadata: string;
 
-  @Column('datetime', { default: () => 'CURRENT_TIMESTAMP' })
+  @OneToMany(
+    () => BlogCustomField,
+    bcf => bcf.blog,
+    { cascade: ['insert'] },
+  )
+  blogCustomFields: BlogCustomField[];
+
+  @CreateDateColumn({ type: 'datetime' })
   createdAt: string;
 
-  @Column('datetime')
+  @UpdateDateColumn({ type: 'datetime' })
   updatedAt: string;
 }
