@@ -84,6 +84,16 @@ describe('UsersController API Contract', () => {
         usersController.create({} as CreateUserDto),
       ).rejects.toThrow(ConflictException);
     });
+
+    it(`should throw what is thrown by the servie`, () => {
+      const error = new Error();
+
+      jest.spyOn(usersService, 'create').mockRejectedValue(error);
+
+      return expect(
+        usersController.create({} as CreateUserDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe('update()', () => {
@@ -118,6 +128,16 @@ describe('UsersController API Contract', () => {
         usersController.update('1', {} as UpdateUserDto),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it(`should throw what is thrown by the servie`, () => {
+      const error = new Error();
+
+      jest.spyOn(usersService, 'update').mockRejectedValue(error);
+
+      return expect(
+        usersController.update('1', {} as UpdateUserDto),
+      ).rejects.toThrow(error);
+    });
   });
 
   describe('remove()', () => {
@@ -135,6 +155,14 @@ describe('UsersController API Contract', () => {
       return expect(usersController.remove('1')).rejects.toThrow(
         new NotFoundException(),
       );
+    });
+
+    it(`should throw what is thrown by the servie`, () => {
+      const error = new Error();
+
+      jest.spyOn(usersService, 'remove').mockRejectedValue(error);
+
+      return expect(usersController.remove('1')).rejects.toThrow(error);
     });
   });
 });
